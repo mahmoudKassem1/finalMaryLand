@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const User = require('../models/User'); // Ensure filename matches case (User.js vs user.js)
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -14,7 +14,10 @@ const generateToken = (id) => {
 // @desc    Register a new user
 // @route   POST /api/users/register
 const registerUser = async (req, res) => {
-  const { name, email, password, phone } = req.body;
+  let { name, email, password, phone } = req.body;
+
+  // ✅ Fix 1: Normalize email to lowercase
+  email = email.toLowerCase();
 
   try {
     const userExists = await User.findOne({ email });
@@ -23,12 +26,10 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash password manually if not handled in Model pre-save
-    // (Note: Your model has a pre-save hook, but doing it here explicitly is also fine)
     const user = await User.create({
       name,
       email,
-      password, // Model pre-save will hash this
+      password,
       phone
     });
 
@@ -45,6 +46,7 @@ const registerUser = async (req, res) => {
       res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
+    console.error("Register Error:", error); // Log for debugging
     res.status(500).json({ message: error.message });
   }
 };
@@ -52,7 +54,10 @@ const registerUser = async (req, res) => {
 // @desc    Auth user & get token (Login)
 // @route   POST /api/users/login
 const authUser = async (req, res) => {
-  const { email, password } = req.body;
+  let { email, password } = req.body;
+
+  // ✅ Fix 1: Normalize email to lowercase
+  email = email.toLowerCase();
 
   try {
     const user = await User.findOne({ email });
@@ -66,7 +71,7 @@ const authUser = async (req, res) => {
         role: user.role,
         isAdmin: user.role === 'admin',
         token: generateToken(user._id),
-        addresses: user.addresses // Send addresses on login
+        addresses: user.addresses 
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
@@ -110,15 +115,21 @@ const updateUserProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
-      // Update basic fields
       user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
       user.phone = req.body.phone || user.phone;
+
+      // ✅ Fix 2: Check if new email is already taken
+      if (req.body.email && req.body.email !== user.email) {
+        const emailExists = await User.findOne({ email: req.body.email.toLowerCase() });
+        if (emailExists) {
+          return res.status(400).json({ message: 'Email already in use' });
+        }
+        user.email = req.body.email.toLowerCase();
+      }
 
       // Update addresses array
       if (req.body.addresses) {
         user.addresses = req.body.addresses;
-        // This is crucial to tell Mongoose that the array has been modified
         user.markModified('addresses');
       }
 
@@ -156,7 +167,7 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-// --- ADDRESS CONTROLLERS (Optional helpers) ---
+// --- ADDRESS CONTROLLERS ---
 
 // @desc    Add new address
 // @route   POST /api/users/address
@@ -166,6 +177,7 @@ const addAddress = async (req, res) => {
     if (user) {
       user.addresses.push(req.body);
       await user.save();
+      // Return only the new address or the full list? Usually full list is safer for state sync.
       res.status(201).json(user.addresses);
     } else {
       res.status(404).json({ message: 'User not found' });
@@ -182,16 +194,21 @@ const updateAddress = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (user) {
       const address = user.addresses.id(req.params.id);
-      if (address) {
-        address.street = req.body.street || address.street;
-        address.city = req.body.city || address.city;
-        address.phone = req.body.phone || address.phone;
-        
-        await user.save();
-        res.json(user.addresses);
-      } else {
-        res.status(404).json({ message: 'Address not found' });
+      
+      // ✅ Fix 3: Ensure address exists
+      if (!address) {
+        return res.status(404).json({ message: 'Address not found' });
       }
+
+      address.street = req.body.street || address.street;
+      address.city = req.body.city || address.city;
+      address.phone = req.body.phone || address.phone;
+      // Add other fields if your address schema has them (e.g. state, zip)
+
+      await user.save();
+      res.json(user.addresses);
+    } else {
+        res.status(404).json({ message: 'User not found' });
     }
   } catch (error) {
     res.status(500).json({ message: 'Error updating address' });
@@ -204,18 +221,18 @@ const deleteAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (user) {
-      user.addresses = user.addresses.filter(
-        (addr) => addr._id.toString() !== req.params.id
-      );
+      // Use Mongoose pull method for cleaner deletion by ID
+      user.addresses.pull({ _id: req.params.id }); 
       await user.save();
       res.json(user.addresses);
+    } else {
+        res.status(404).json({ message: 'User not found' });
     }
   } catch (error) {
     res.status(500).json({ message: 'Error deleting address' });
   }
 };
 
-// ✅ EXPORT ALL FUNCTIONS
 module.exports = {
   registerUser,
   authUser,

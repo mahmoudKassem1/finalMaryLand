@@ -15,7 +15,12 @@ export const AuthProvider = ({ children }) => {
       const storedUser = localStorage.getItem('userInfo');
 
       if (storedToken && storedUser) {
-        setUser(JSON.parse(storedUser));
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (error) {
+          console.error("Failed to parse user info:", error);
+          localStorage.removeItem('userInfo');
+        }
       }
       setLoading(false);
     };
@@ -26,12 +31,10 @@ export const AuthProvider = ({ children }) => {
   // 2. Login Function
   const login = async (email, password) => {
     try {
-      // ✅ Using '/users/login' to match our backend structure
       const { data } = await api.post('/users/login', { email, password });
       
-      // Save data to LocalStorage
       localStorage.setItem('userInfo', JSON.stringify(data));
-      localStorage.setItem('token', data.token); // ✅ Client Token only
+      localStorage.setItem('token', data.token);
       
       setUser(data);
       return { success: true };
@@ -44,11 +47,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 3. Register Function
-  const register = async (name, email, password, phone) => {
+  // 3. Register Function (FIXED)
+  const register = async (userData) => {
     try {
-      // ✅ Using '/users/register'
-      const { data } = await api.post('/users/register', { name, email, password, phone });
+      // ✅ We send 'userData' directly. Do NOT wrap it in { }
+      const { data } = await api.post('/users/register', userData);
       
       localStorage.setItem('userInfo', JSON.stringify(data));
       localStorage.setItem('token', data.token);
@@ -56,6 +59,7 @@ export const AuthProvider = ({ children }) => {
       setUser(data);
       return { success: true };
     } catch (error) {
+      console.error("Registration Failed:", error.response?.data?.message);
       return { 
         success: false, 
         error: error.response?.data?.message || "Registration failed" 
@@ -63,20 +67,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 4. Logout Function (FIXED)
+  // 4. Logout Function
   const logout = () => {
-    // ✅ Remove ONLY Client data
     localStorage.removeItem('userInfo');
     localStorage.removeItem('token');
-    
-    
-    
     setUser(null);
+    // Optional: Redirect to login or home if needed
+    // window.location.href = '/login'; 
   };
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, loading }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

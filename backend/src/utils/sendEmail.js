@@ -1,11 +1,14 @@
 const { Resend } = require('resend');
 
-// Initialize Resend with your API Key from Railway Variables
-const resend = new Resend(process.env.RESEND_API_KEY);
+// ⚠️ We do NOT initialize it here anymore to prevent startup crashes.
+// const resend = new Resend(process.env.RESEND_API_KEY); <--- REMOVED
 
 const sendEmail = async (options) => {
   try {
-    // ✅ 1. CONTENT LOGIC (Identical to your old script)
+    // ✅ Initialize Resend INSIDE the function
+    // This ensures .env is fully loaded before we try to use the key
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
     let contentBody = '';
     if (options.html) {
       contentBody = options.html;
@@ -14,7 +17,6 @@ const sendEmail = async (options) => {
       contentBody = `<p style="font-size: 16px; margin-bottom: 20px;">${messageText.replace(/\n/g, '<br />')}</p>`;
     }
 
-    // ✅ 2. BUTTON LOGIC (Identical to your old script)
     const buttonHtml = options.ctaUrl ? `
       <div style="text-align: center; margin: 30px 0;">
         <a href="${options.ctaUrl}" style="background-color: #DC2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(220, 38, 38, 0.3);">
@@ -28,7 +30,6 @@ const sendEmail = async (options) => {
       </p>
     ` : '';
 
-    // ✅ 3. MASTER TEMPLATE (Identical to your old script)
     const htmlTemplate = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
         <div style="background-color: #DC2626; padding: 30px; text-align: center;">
@@ -50,9 +51,10 @@ const sendEmail = async (options) => {
       </div>
     `;
 
-    // ✅ 4. SEND VIA RESEND API
+    // Send the email
+    // Note: Free tier requires 'to' be your own email until you verify a domain
     await resend.emails.send({
-      from: 'Maryland Pharmacy <onboarding@resend.dev>', // Keep this for free tier
+      from: 'Maryland Pharmacy <onboarding@resend.dev>',
       to: options.email || options.to,
       subject: options.subject,
       html: htmlTemplate,
@@ -61,8 +63,8 @@ const sendEmail = async (options) => {
     console.log("✅ Email sent via Resend API");
 
   } catch (error) {
-    // ⚠️ Prevent Backend Crash
     console.error("❌ Resend Email Failed:", error.message);
+    // Don't throw error to prevent crashing the server
   }
 };
 
