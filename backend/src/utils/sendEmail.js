@@ -1,12 +1,18 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
+  // ✅ FIX: Use Port 587 (STARTTLS) to bypass Railway blocking Port 465
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // Must be false for port 587
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    tls: {
+      ciphers: 'SSLv3' // Helps prevent handshake errors in cloud environments
+    }
   });
 
   // ✅ LOGIC: Determine Content Type
