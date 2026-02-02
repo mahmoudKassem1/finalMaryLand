@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
-import { Phone, MessageCircle, MapPin, Facebook, Clock, Send, Navigation } from 'lucide-react';
+import { Phone, MessageCircle, MapPin, Facebook, Instagram, Clock, Send, Navigation } from 'lucide-react';
 
 const ContactUs = () => {
   const { lang } = useApp();
@@ -11,8 +11,7 @@ const ContactUs = () => {
     whatsapp: ['+201000686866', '+201000076890', '+201033520476'],
     landline: ['03 5408605', '03 5499475'],
     facebook: "https://www.facebook.com/share/1GUYMi3dKK/?mibextid=wwXIfr",
-    // Replace with your pharmacy's actual coordinates or search string
-    coordinates: "31.2333,29.9500", 
+    instagram: "https://www.instagram.com/marylandpharmacy2020?igsh=MWZhNm51eHdqYWptcg==", // ✅ Added Instagram
     addressSearch: "Maryland+Pharmacy+Alexandria+Egypt"
   };
 
@@ -69,14 +68,29 @@ const ContactUs = () => {
               </div>
             </section>
 
-            <SquircleButton 
-              variant="secondary" 
-              fullWidth 
-              icon={Facebook}
-              onClick={() => window.open(contacts.facebook, '_blank')}
-            >
-              Facebook Page
-            </SquircleButton>
+            {/* Social Media Buttons */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SquircleButton 
+                variant="secondary" 
+                fullWidth 
+                icon={Facebook}
+                onClick={() => window.open(contacts.facebook, '_blank')}
+                className="bg-blue-500 text-blue-600 hover:bg-blue-100 border-blue-100"
+              >
+                Facebook
+              </SquircleButton>
+
+              <SquircleButton 
+                variant="secondary" 
+                fullWidth 
+                icon={Instagram}
+                onClick={() => window.open(contacts.instagram, '_blank')}
+                className="bg-pink-50 text-pink-500 hover:bg-pink-100 border-pink-100"
+              >
+                Instagram
+              </SquircleButton>
+            </section>
+
           </GlassCard>
         </div>
 
@@ -109,11 +123,12 @@ const ContactUs = () => {
               </SquircleButton>
             </div>
             
-            {/* Embedded Google Map (Using a standard embed URL) */}
+            {/* Embedded Google Map */}
             <div className="flex-1 min-h-[300px] bg-slate-100">
               <iframe 
                 title="Maryland Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d109153.11413847387!2d29.866938997265625!3d31.233333999999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14f5c49126710fd3%3A0xb4a06662a3bc5751!2sAlexandria%2C%20Egypt!5e0!3m2!1sen!2seg!4v1700000000000!5m2!1sen!2seg"
+                // Using a generic search embed. For a specific pin, you'd use the 'pb=' param from Google Maps "Share > Embed" option.
+                src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3412.345!2d29.9500!3d31.2333!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzHCsDE0JzAwLjAiTiAyOcKwNTcnMDAuMCJF!5e0!3m2!1sen!2seg!4v1600000000000!5m2!1sen!2seg`}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

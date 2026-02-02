@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom'; // ✅ Import Link for redirection
 import { useApp } from '../../context/AppContext';
-import { Phone, MessageCircle, Facebook, MapPin } from 'lucide-react';
+import { Phone, MessageCircle, Facebook, MapPin, Instagram, ArrowRight } from 'lucide-react'; // ✅ Import Instagram & ArrowRight
 import Logo from '../ui/Logo';
 
 const Footer = () => {
@@ -12,9 +13,9 @@ const Footer = () => {
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           
-          {/* 1. BRAND SECTION */}
+          {/* 1. BRAND SECTION & CONTACT LINK */}
           <div className="space-y-6">
-            {/* Glass Effect Container for the Dark Logo */}
+            {/* Glass Effect Container for the Logo */}
             <div className="inline-block p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 shadow-inner">
               <Logo size="h-10 sm:h-12" showText={false} />
             </div>
@@ -30,9 +31,20 @@ const Footer = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 text-slate-400 text-sm">
-              <MapPin size={16} className="text-[#DC2626]" />
-              <span>{lang === 'ar' ? 'الإسكندرية، مصر' : 'Alexandria, Egypt'}</span>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-slate-400 text-sm">
+                <MapPin size={16} className="text-[#DC2626]" />
+                <span>{lang === 'ar' ? 'الإسكندرية، مصر' : 'Alexandria, Egypt'}</span>
+              </div>
+
+              {/* ✅ CONTACT US BUTTON */}
+              <Link 
+                to="/contact" 
+                className="inline-flex items-center gap-2 text-sm font-bold text-white hover:text-[#DC2626] transition-colors group"
+              >
+                {lang === 'ar' ? 'تواصل معنا الآن' : 'Contact Us Now'}
+                <ArrowRight size={16} className={`transition-transform ${lang === 'ar' ? 'group-hover:-translate-x-1 rotate-180' : 'group-hover:translate-x-1'}`} />
+              </Link>
             </div>
           </div>
           
@@ -75,15 +87,31 @@ const Footer = () => {
               <h4 className="font-black text-xs uppercase tracking-widest text-[#DC2626] mb-3">
                 {lang === 'ar' ? 'تابعنا' : 'Follow Us'}
               </h4>
-              <a 
-                href="https://www.facebook.com/share/1GUYMi3dKK/?mibextid=wwXIfr" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-white/5 hover:bg-[#DC2626] px-4 py-2 rounded-xl transition-all duration-300"
-              >
-                <Facebook size={20} />
-                <span className="text-sm font-bold">Facebook Page</span>
-              </a>
+              
+              {/* ✅ SOCIAL MEDIA BUTTONS (Wrapped to fix responsiveness) */}
+              <div className="flex flex-wrap gap-3">
+                {/* Facebook */}
+                <a 
+                  href="https://www.facebook.com/share/1GUYMi3dKK/?mibextid=wwXIfr" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-white/5 hover:bg-[#1877F2] hover:text-white px-4 py-2 rounded-xl transition-all duration-300 text-slate-300"
+                >
+                  <Facebook size={20} />
+                  <span className="text-sm font-bold">Facebook</span>
+                </a>
+
+                {/* Instagram */}
+                <a 
+                  href="https://www.instagram.com/marylandpharmacy2020?igsh=MWZhNm51eHdqYWptcg==" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-white/5 hover:bg-[#E1306C] hover:text-white px-4 py-2 rounded-xl transition-all duration-300 text-slate-300"
+                >
+                  <Instagram size={20} />
+                  <span className="text-sm font-bold">Instagram</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>

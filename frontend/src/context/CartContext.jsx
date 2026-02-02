@@ -50,20 +50,29 @@ export const CartProvider = ({ children }) => {
     return cartItems.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
   };
 
-  // --- NEW: CHECKOUT LOGIC ---
-  const checkout = async (shippingAddress, paymentMethod = 'Cash on Delivery') => {
+  // --- NEW: CHECKOUT LOGIC (FIXED) ---
+  // ✅ Now accepts a single object 'orderData' containing address + payment info
+  const checkout = async (orderData) => {
     try {
-      // Map cartItems to the format the Backend expects.
-      // The backend will calculate prices and totals securely.
+      // 1. Map cartItems to backend format
       const orderItems = cartItems.map(item => ({
         product: item._id,
         quantity: item.quantity
       }));
 
+      // 2. Construct Payload
+      // We extract address fields into 'shippingAddress' object
+      // We pass paymentMethod and transactionId at the root level
       const payload = {
         orderItems,
-        shippingAddress,
-        paymentMethod
+        shippingAddress: {
+          street: orderData.street,
+          city: orderData.city,
+          aptNumber: orderData.aptNumber,
+          phone: orderData.phone,
+        },
+        paymentMethod: orderData.paymentMethod, // ✅ Correctly sent now
+        transactionId: orderData.transactionId  // ✅ Correctly sent now
       };
 
       const { data } = await api.post('/orders', payload);
