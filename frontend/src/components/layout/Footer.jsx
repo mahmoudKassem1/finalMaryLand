@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom'; // ✅ Import Link for redirection
+import { Link } from 'react-router-dom'; 
 import { useApp } from '../../context/AppContext';
-import { Phone, MessageCircle, Facebook, MapPin, Instagram, ArrowRight } from 'lucide-react'; // ✅ Import Instagram & ArrowRight
+import { Phone, MessageCircle, Facebook, MapPin, Instagram, ArrowRight, Code } from 'lucide-react'; 
 import Logo from '../ui/Logo';
 
 const Footer = () => {
@@ -15,7 +15,6 @@ const Footer = () => {
           
           {/* 1. BRAND SECTION & CONTACT LINK */}
           <div className="space-y-6">
-            {/* Glass Effect Container for the Logo */}
             <div className="inline-block p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 shadow-inner">
               <Logo size="h-10 sm:h-12" showText={false} />
             </div>
@@ -37,7 +36,6 @@ const Footer = () => {
                 <span>{lang === 'ar' ? 'الإسكندرية، مصر' : 'Alexandria, Egypt'}</span>
               </div>
 
-              {/* ✅ CONTACT US BUTTON */}
               <Link 
                 to="/contact" 
                 className="inline-flex items-center gap-2 text-sm font-bold text-white hover:text-[#DC2626] transition-colors group"
@@ -48,7 +46,7 @@ const Footer = () => {
             </div>
           </div>
           
-          {/* 2. CONTACT INFO (PHONES & WHATSAPP) */}
+          {/* 2. CONTACT INFO */}
           <div className="space-y-6">
             <div>
               <h4 className="font-black text-xs uppercase tracking-widest text-[#DC2626] mb-4">
@@ -88,9 +86,7 @@ const Footer = () => {
                 {lang === 'ar' ? 'تابعنا' : 'Follow Us'}
               </h4>
               
-              {/* ✅ SOCIAL MEDIA BUTTONS (Wrapped to fix responsiveness) */}
               <div className="flex flex-wrap gap-3">
-                {/* Facebook */}
                 <a 
                   href="https://www.facebook.com/share/1GUYMi3dKK/?mibextid=wwXIfr" 
                   target="_blank" 
@@ -101,7 +97,6 @@ const Footer = () => {
                   <span className="text-sm font-bold">Facebook</span>
                 </a>
 
-                {/* Instagram */}
                 <a 
                   href="https://www.instagram.com/marylandpharmacy2020?igsh=MWZhNm51eHdqYWptcg==" 
                   target="_blank" 
@@ -116,11 +111,22 @@ const Footer = () => {
           </div>
         </div>
         
-        {/* BOTTOM COPYRIGHT */}
-        <div className="border-t border-white/5 pt-8 text-center">
+        {/* BOTTOM COPYRIGHT & DEVELOPER CREDIT */}
+        <div className="border-t border-white/5 pt-8 flex flex-col items-center gap-3 text-center">
           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
             © {currentYear} MARYLAND PHARMACY. ALL RIGHTS RESERVED.
           </p>
+          
+          {/* ✅ DEVELOPER CREDIT */}
+          <a 
+            href="https://www.linkedin.com/in/mahmoud-kassem-91aa22305/"
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-slate-600 hover:text-[#DC2626] text-[10px] font-black uppercase tracking-widest transition-colors duration-300"
+          >
+            <Code size={10} className="stroke-[3]" />
+            {lang === 'ar' ? 'تصميم وتطوير محمود قاسم' : 'Designed & Developed by Mahmoud Kassem'}
+          </a>
         </div>
       </div>
     </footer>

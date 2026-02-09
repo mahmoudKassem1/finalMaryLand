@@ -11,15 +11,19 @@ const ContactUs = () => {
     whatsapp: ['+201000686866', '+201000076890', '+201033520476'],
     landline: ['03 5408605', '03 5499475'],
     facebook: "https://www.facebook.com/share/1GUYMi3dKK/?mibextid=wwXIfr",
-    instagram: "https://www.instagram.com/marylandpharmacy2020?igsh=MWZhNm51eHdqYWptcg==", // ✅ Added Instagram
-    addressSearch: "Maryland+Pharmacy+Alexandria+Egypt"
+    instagram: "https://www.instagram.com/marylandpharmacy2020?igsh=MWZhNm51eHdqYWptcg==",
+    // Updated to exact coordinates for Maryland Pharmacy (Miami Branch)
+    coordinates: "31.2668,29.9895"
   };
 
   const handleGetDirections = () => {
+    // Detect iOS devices
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    // Use exact coordinates for navigation to ensure accuracy
     const url = isIOS 
-      ? `maps://maps.apple.com/?q=${contacts.addressSearch}`
-      : `https://www.google.com/maps/search/?api=1&query=${contacts.addressSearch}`;
+      ? `maps://maps.apple.com/?q=${contacts.coordinates}`
+      : `https://www.google.com/maps/search/?api=1&query=${contacts.coordinates}`;
     
     window.open(url, '_blank');
   };
@@ -85,7 +89,7 @@ const ContactUs = () => {
                 fullWidth 
                 icon={Instagram}
                 onClick={() => window.open(contacts.instagram, '_blank')}
-                className="bg-pink-50 text-pink-500 hover:bg-pink-100 border-pink-100"
+                className="bg-pink-500 text-white-600 hover:bg-pink-100 border-pink-100"
               >
                 Instagram
               </SquircleButton>
@@ -124,14 +128,14 @@ const ContactUs = () => {
             </div>
             
             {/* Embedded Google Map */}
-            <div className="flex-1 min-h-[300px] bg-slate-100">
+            <div className="flex-1 min-h-[300px] bg-slate-100 relative">
               <iframe 
                 title="Maryland Location"
-                // Using a generic search embed. For a specific pin, you'd use the 'pb=' param from Google Maps "Share > Embed" option.
-                src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3412.345!2d29.9500!3d31.2333!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzHCsDE0JzAwLjAiTiAyOcKwNTcnMDAuMCJF!5e0!3m2!1sen!2seg!4v1600000000000!5m2!1sen!2seg`}
+                // Using precise coordinates to pin "Maryland Pharmacy" exactly on the map
+                src={`https://maps.google.com/maps?q=${contacts.coordinates}+(Maryland+Pharmacy)&hl=${lang}&z=16&output=embed`}
                 width="100%"
                 height="100%"
-                style={{ border: 0 }}
+                style={{ border: 0, minHeight: '350px' }}
                 allowFullScreen=""
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
