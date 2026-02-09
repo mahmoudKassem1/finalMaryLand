@@ -72,6 +72,7 @@ const AdminRoute = ({ children }) => {
 };
 
 const App = () => {
+  console.log("App Version: Reset Fix Applied");
   const { lang } = useApp();
   const location = useLocation();
 
