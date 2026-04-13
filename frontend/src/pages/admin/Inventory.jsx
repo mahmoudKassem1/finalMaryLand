@@ -178,7 +178,7 @@ const Inventory = () => {
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h2 className="text-2xl font-black text-white flex items-center gap-2">
+        <h2 className="text-2xl font-black text-black flex items-center gap-2">
           <Package className="text-[#DC2626]" />
           {lang === 'ar' ? 'إدارة المخزون' : 'Inventory Management'}
         </h2>

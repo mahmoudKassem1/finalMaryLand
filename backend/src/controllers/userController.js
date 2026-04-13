@@ -14,9 +14,9 @@ const generateToken = (id) => {
 // @desc    Register a new user
 // @route   POST /api/users/register
 const registerUser = async (req, res) => {
-  let { name, email, password, phone } = req.body;
+  // ✅ 1. Extract the address fields from the frontend request
+  let { name, email, password, phone, street, aptNumber, city } = req.body;
 
-  // ✅ Fix 1: Normalize email to lowercase
   email = email.toLowerCase();
 
   try {
@@ -26,11 +26,22 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // ✅ 2. Format the initial address object
+    const initialAddress = {
+      street: street,
+      aptNumber: aptNumber || '',
+      city: city || 'Alexandria',
+      phone: phone, 
+      isDefault: true
+    };
+
+    // ✅ 3. Save the addresses array into MongoDB
     const user = await User.create({
       name,
       email,
       password,
-      phone
+      phone,
+      addresses: [initialAddress] // <--- This is what fixes the bug
     });
 
     if (user) {
@@ -40,13 +51,14 @@ const registerUser = async (req, res) => {
         email: user.email,
         phone: user.phone,
         isAdmin: user.role === 'admin',
+        addresses: user.addresses, // ✅ 4. Send the new address back to the React app
         token: generateToken(user._id),
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
-    console.error("Register Error:", error); // Log for debugging
+    console.error("Register Error:", error); 
     res.status(500).json({ message: error.message });
   }
 };

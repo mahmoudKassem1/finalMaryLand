@@ -178,7 +178,7 @@ const ProductDetails = () => {
                     {lang === 'en' ? 'Shipping' : 'الشحن'}
                 </span>
                 <span className="text-blue-900 font-bold text-sm">
-                    {t.express_delivery || (lang === 'en' ? 'Express Delivery' : 'توصيل سريع')}
+                    {t.express_delivery || (lang === 'en' ? 'Fast Delivery' : 'توصيل سريع')}
                 </span>
               </div>
             </div>

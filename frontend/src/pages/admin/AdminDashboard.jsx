@@ -35,7 +35,7 @@ const AdminDashboard = () => {
         ]);
 
         setStats(statsRes.data);
-        setDeliveryFee(settingsRes.data.deliveryFee || 50);
+        setDeliveryFee(settingsRes.data.deliveryFee );
         setNotificationEmails(settingsRes.data.notificationEmails || []);
       } catch (error) {
         console.error("Dashboard Error:", error);
@@ -108,7 +108,7 @@ const AdminDashboard = () => {
       
       {/* 1. Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tighter">
+        <h1 className="text-3xl sm:text-4xl font-black text-black uppercase tracking-tighter">
           {lang === 'ar' ? 'نظرة عامة على' : 'Panel'} <span className="text-[#DC2626]">{lang === 'ar' ? 'لوحة التحكم' : 'Overview'}</span>
         </h1>
         <p className="text-slate-400 font-bold text-xs sm:text-sm bg-white/5 px-4 py-2 rounded-xl border border-white/10 self-start md:self-auto">

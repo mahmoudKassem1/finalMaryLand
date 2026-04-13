@@ -5,9 +5,10 @@ import { useApp } from '../../context/AppContext';
 import { useNavigate, Navigate } from 'react-router-dom';
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
-import { MapPin, Plus, Truck, CreditCard, ShieldCheck, ArrowRight, Edit3, Trash2, X, Save, Smartphone, Wallet, Copy, MessageCircle } from 'lucide-react';
+import { MapPin, Plus, Truck, CreditCard, ShieldCheck, ArrowRight, Edit3, Trash2, X, Save, Smartphone, Wallet, Copy, MessageCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../utils/axios'; 
+
 
 // ✅ CONFIG: Payment Details
 const WHATSAPP_NUMBERS = ['+201000686866', '+201000076890', '+201033520476'];
@@ -46,6 +47,7 @@ const CheckoutContent = () => {
   const [mode, setMode] = useState('list');
   const [form, setForm] = useState({ street: '', building: '', city: 'Alexandria' });
   const [editingId, setEditingId] = useState(null);
+  const [addressToDelete, setAddressToDelete] = useState(null); // ✅ New State for Delete Modal
   
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -112,22 +114,30 @@ const CheckoutContent = () => {
     }
   };
 
-  const handleDelete = async (e, id) => {
+  // ✅ Updated Delete Flow
+  const initiateDelete = (e, id) => {
     e.stopPropagation(); 
-    if (!window.confirm("Delete this address?")) return;
+    setAddressToDelete(id); 
+  };
+
+  const confirmDelete = async () => {
+    if (!addressToDelete) return;
     try {
       setIsProcessing(true);
-      const { data } = await api.delete(`/users/address/${id}`);
+      const { data } = await api.delete(`/users/address/${addressToDelete}`);
       const updatedUser = { ...user, addresses: data };
       if (setUser) setUser(updatedUser);
       setAddresses(data);
-      if (selectedAddrId === id && data.length > 0) setSelectedAddrId(data[0]._id);
+      if (selectedAddrId === addressToDelete) {
+         setSelectedAddrId(data.length > 0 ? data[0]._id : null);
+      }
       toast.success(lang === 'en' ? 'Address Deleted' : 'تم حذف العنوان');
     } catch (error) {
-      toast.error('Failed to delete');
+      toast.error(lang === 'en' ? 'Failed to delete' : 'فشل الحذف');
       console.error(error);
     } finally {
       setIsProcessing(false);
+      setAddressToDelete(null); 
     }
   };
 
@@ -247,7 +257,7 @@ const CheckoutContent = () => {
                     </div>
                     <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={(e) => startEdit(e, addr)} className="p-2 bg-slate-50 text-slate-400 hover:text-[#DC2626] rounded-full"><Edit3 size={18} /></button>
-                      <button onClick={(e) => handleDelete(e, addr._id)} className="p-2 bg-slate-50 text-slate-400 hover:text-red-600 rounded-full"><Trash2 size={18} /></button>
+                      <button onClick={(e) => initiateDelete(e, addr._id)} className="p-2 bg-slate-50 text-slate-400 hover:text-red-600 rounded-full"><Trash2 size={18} /></button>
                     </div>
                   </div>
                 ))}
@@ -314,7 +324,7 @@ const CheckoutContent = () => {
               </div>
             </div>
 
-            {/* Selected Manual Payment Info (No input anymore) */}
+            {/* Selected Manual Payment Info */}
             {(paymentMethod === 'InstaPay' || paymentMethod === 'VodafoneCash') && !showPaymentModal && (
               <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm">
                  <span className="font-bold text-slate-700">
@@ -371,13 +381,12 @@ const CheckoutContent = () => {
         </div>
       </div>
 
-      {/* --- PAYMENT MODAL POPUP (RESPONSIVE FIXES) --- */}
+      {/* --- PAYMENT MODAL POPUP --- */}
       {showPaymentModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-fade-in">
-          {/* ✅ ADDED: flex flex-col and max-h-[85vh] to fix height issues */}
           <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
             
-            {/* Header (Fixed) */}
+            {/* Header */}
             <div className={`shrink-0 p-5 flex items-center justify-between border-b ${showPaymentModal === 'InstaPay' ? 'bg-purple-600' : 'bg-[#DC2626]'}`}>
               <h3 className="text-white font-black text-lg flex items-center gap-2">
                 {showPaymentModal === 'InstaPay' ? <Smartphone size={24}/> : <Wallet size={24}/>}
@@ -388,8 +397,7 @@ const CheckoutContent = () => {
               </button>
             </div>
 
-            {/* Body (Scrollable) */}
-            {/* ✅ ADDED: overflow-y-auto to enable scrolling */}
+            {/* Body */}
             <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
               
               {/* Link Section */}
@@ -440,8 +448,6 @@ const CheckoutContent = () => {
                 </div>
               </div>
 
-              {/* ✅ REMOVED: Input field entirely */}
-
               {/* WhatsApp Instruction */}
               <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 text-center">
                    <p className="text-xs text-slate-500 mb-3 leading-relaxed">
@@ -465,6 +471,67 @@ const CheckoutContent = () => {
               </button>
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ ADDED: DELETE CONFIRMATION MODAL */}
+      {addressToDelete && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+          <div className="bg-[#1E293B] border border-slate-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-scale-up">
+            
+            {/* Close Button */}
+            <button 
+              onClick={() => setAddressToDelete(null)}
+              disabled={isProcessing}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Content */}
+            <div className="flex flex-col items-center text-center mt-2">
+              <div className="bg-red-500/10 p-4 rounded-full mb-4 border border-red-500/20 text-[#DC2626]">
+                <AlertTriangle size={32} />
+              </div>
+              
+              <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">
+                {lang === 'en' ? 'Delete Address?' : 'حذف العنوان؟'}
+              </h3>
+              
+              <p className="text-slate-400 text-sm font-medium mb-8">
+                {lang === 'en' 
+                  ? 'Are you sure you want to remove this address? This action cannot be undone.' 
+                  : 'هل أنت متأكد من رغبتك في حذف هذا العنوان؟ لا يمكن التراجع عن هذا الإجراء.'}
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => setAddressToDelete(null)}
+                  disabled={isProcessing}
+                  className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-all disabled:opacity-50"
+                >
+                  {lang === 'en' ? 'Cancel' : 'إلغاء'}
+                </button>
+                
+                <button 
+                  onClick={confirmDelete}
+                  disabled={isProcessing}
+                  className="flex-1 py-3 bg-[#DC2626] hover:bg-red-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-900/20 disabled:opacity-50"
+                >
+                  {isProcessing ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      {lang === 'en' ? 'Delete' : 'حذف'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+            
           </div>
         </div>
       )}

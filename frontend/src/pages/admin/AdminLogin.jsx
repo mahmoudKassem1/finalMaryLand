@@ -49,11 +49,11 @@ const AdminLogin = () => {
             <label className="text-xs font-bold text-slate-400 px-2">Manager Email</label>
             <input 
               type="email" 
-              className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 text-white outline-none focus:border-[#DC2626] transition-all placeholder:text-slate-600"
+              className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 text- outline-none focus:border-[#DC2626] transition-all placeholder:text-slate-600"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="admin@maryland.com"
+              placeholder="enter email"
             />
           </div>
           

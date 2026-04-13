@@ -11,8 +11,9 @@ const Orders = () => {
   
   // --- STATE ---
   const [orders, setOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]); // ✅ For Search
-  const [searchTerm, setSearchTerm] = useState('');         // ✅ Search Input
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // ✅ Added Status Filter State
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -22,7 +23,7 @@ const Orders = () => {
     try {
       const { data } = await api.get('/orders');
       setOrders(data);
-      setFilteredOrders(data); // Initialize filtered list
+      setFilteredOrders(data);
     } catch (error) {
       console.error("Orders Error:", error);
       toast.error("Failed to load orders");
@@ -35,19 +36,26 @@ const Orders = () => {
     fetchOrders();
   }, []);
 
-  // --- SEARCH HANDLER ---
+  // --- SEARCH & FILTER HANDLER ---
   useEffect(() => {
-    if (!searchTerm) {
-      setFilteredOrders(orders);
-    } else {
+    let result = orders;
+
+    // 1. Apply Status Filter
+    if (statusFilter !== 'all') {
+      result = result.filter(order => order.status?.toLowerCase() === statusFilter);
+    }
+
+    // 2. Apply Search Filter
+    if (searchTerm) {
       const lowerTerm = searchTerm.toLowerCase();
-      const filtered = orders.filter(order => 
+      result = result.filter(order => 
         (order.user?.name || '').toLowerCase().includes(lowerTerm) ||
         (order._id || '').toLowerCase().includes(lowerTerm)
       );
-      setFilteredOrders(filtered);
     }
-  }, [searchTerm, orders]);
+
+    setFilteredOrders(result);
+  }, [searchTerm, statusFilter, orders]);
 
   // --- HANDLERS ---
   const handleStatusChange = async (id, newStatus) => {
@@ -58,7 +66,7 @@ const Orders = () => {
         order._id === id ? { ...order, status: newStatus } : order
       );
       setOrders(updateList);
-      setFilteredOrders(updateList); // Update filtered view too
+      // Removed setFilteredOrders(updateList) here because the useEffect above handles it automatically
       toast.success(lang === 'en' ? 'Status Updated' : 'تم تحديث الحالة');
     } catch (error) {
       toast.error("Update failed");
@@ -117,11 +125,12 @@ const Orders = () => {
   return (
     <div className="space-y-8 pb-20 animate-fade-in">
       
-      {/* 1. PAGE HEADER & SEARCH */}
-      <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 border-b border-white/10 pb-6">
+      {/* 1. PAGE HEADER & SEARCH & FILTER */}
+      {/* Changed to lg:flex-row and lg:items-center to fit the 3 elements perfectly */}
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 border-b border-white/10 pb-6 w-full">
         
         {/* Title Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 w-full xl:w-auto">
           <div className="bg-[#DC2626] p-3 rounded-2xl shadow-lg shadow-red-900/20">
             <Package className="text-white" size={24} />
           </div>
@@ -138,8 +147,30 @@ const Orders = () => {
           </div>
         </div>
 
+        {/* ✅ Status Filter (Middle Section) */}
+        <div className="w-full xl:w-auto flex items-center p-1.5 bg-[#1E293B] rounded-xl border border-slate-700 overflow-x-auto shadow-lg hide-scrollbar">
+          {[
+            { id: 'all', en: 'All', ar: 'الكل' },
+            { id: 'new', en: 'New', ar: 'جديد' },
+            { id: 'delivered', en: 'Delivered', ar: 'تم التوصيل' },
+            { id: 'cancelled', en: 'Cancelled', ar: 'ملغي' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
+              className={`flex-1 xl:flex-none px-6 py-2 text-sm font-bold rounded-lg transition-all whitespace-nowrap ${
+                statusFilter === tab.id
+                  ? 'bg-[#DC2626] text-white shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              {lang === 'ar' ? tab.ar : tab.en}
+            </button>
+          ))}
+        </div>
+
         {/* Search Input */}
-        <div className="w-full md:w-auto relative group">
+        <div className="w-full xl:w-auto relative group">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
             <Search className="text-slate-500 group-focus-within:text-[#DC2626] transition-colors" size={18} />
           </div>
@@ -148,7 +179,7 @@ const Orders = () => {
             placeholder={lang === 'ar' ? 'بحث باسم العميل أو رقم الطلب...' : 'Search by Customer Name or ID...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-80 bg-[#1E293B] border border-slate-700 text-white text-sm font-medium py-3 pl-10 pr-4 rounded-xl focus:outline-none focus:border-[#DC2626] focus:ring-1 focus:ring-[#DC2626] placeholder-slate-500 transition-all shadow-lg"
+            className="w-full xl:w-80 bg-[#1E293B] border border-slate-700 text-white text-sm font-medium py-3 pl-10 pr-4 rounded-xl focus:outline-none focus:border-[#DC2626] focus:ring-1 focus:ring-[#DC2626] placeholder-slate-500 transition-all shadow-lg"
           />
         </div>
       </div>
@@ -162,7 +193,7 @@ const Orders = () => {
               <th className="px-6 py-5">Customer</th>
               <th className="px-6 py-5">Date</th>
               <th className="px-6 py-5">Amount</th>
-              <th className="px-6 py-5">Payment</th> {/* ✅ Added Column */}
+              <th className="px-6 py-5">Payment</th>
               <th className="px-6 py-5">Status</th>
               <th className="px-6 py-5 text-center">Actions</th>
             </tr>
@@ -208,7 +239,7 @@ const Orders = () => {
                   </p>
                 </td>
 
-                {/* Payment Method (✅ New) */}
+                {/* Payment Method */}
                 <td className="px-6 py-4">
                   {getPaymentBadge(order.paymentMethod)}
                 </td>
@@ -264,64 +295,75 @@ const Orders = () => {
         {filteredOrders.length === 0 && (
           <div className="p-12 text-center text-slate-500">
             <Search size={48} className="mx-auto mb-4 opacity-20" />
-            <p className="font-bold">No orders found matching "{searchTerm}"</p>
+            <p className="font-bold">
+              {lang === 'ar' ? 'لم يتم العثور على طلبات مطابقة' : 'No orders found matching the criteria'}
+            </p>
           </div>
         )}
       </div>
 
       {/* 3. MOBILE CARDS (Responsive Layout) */}
       <div className="md:hidden space-y-4">
-        {filteredOrders.map((order) => (
-          <GlassCard key={order._id} variant="dark" className="p-5 border border-slate-700 bg-[#1E293B]">
-            {/* Top Row: ID & Date */}
-            <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
-               <span className="font-mono text-xs font-bold bg-slate-900 px-2 py-1 rounded text-slate-300">
-                 #{order._id.slice(-6).toUpperCase()}
-               </span>
-               <span className="text-xs text-slate-400 flex items-center gap-1">
-                 <Calendar size={12} />
-                 {new Date(order.createdAt).toLocaleDateString()}
-               </span>
-            </div>
+        {filteredOrders.length === 0 ? (
+          <div className="p-12 text-center text-slate-500 bg-[#1E293B] border border-slate-700 rounded-3xl">
+            <Search size={48} className="mx-auto mb-4 opacity-20" />
+            <p className="font-bold">
+              {lang === 'ar' ? 'لا يوجد طلبات' : 'No orders found'}
+            </p>
+          </div>
+        ) : (
+          filteredOrders.map((order) => (
+            <GlassCard key={order._id} variant="dark" className="p-5 border border-slate-700 bg-[#1E293B]">
+              {/* Top Row: ID & Date */}
+              <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+                 <span className="font-mono text-xs font-bold bg-slate-900 px-2 py-1 rounded text-slate-300">
+                   #{order._id.slice(-6).toUpperCase()}
+                 </span>
+                 <span className="text-xs text-slate-400 flex items-center gap-1">
+                   <Calendar size={12} />
+                   {new Date(order.createdAt).toLocaleDateString()}
+                 </span>
+              </div>
 
-            {/* Middle Row: User & Status */}
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                  <h3 className="text-white font-bold text-lg">{order.user?.name || 'Guest'}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                     {getPaymentBadge(order.paymentMethod)} {/* ✅ Payment Badge */}
-                     <span className="text-xs text-slate-500 font-medium">|</span>
-                     <p className="text-sm font-black text-[#DC2626]">{(order.totalAmount || 0).toLocaleString()} EGP</p>
-                  </div>
-               </div>
-               <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase border ${getStatusStyles(order.status)}`}>
-                  {order.status}
-               </span>
-            </div>
+              {/* Middle Row: User & Status */}
+              <div className="flex justify-between items-start mb-4">
+                 <div>
+                    <h3 className="text-white font-bold text-lg">{order.user?.name || 'Guest'}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                       {getPaymentBadge(order.paymentMethod)}
+                       <span className="text-xs text-slate-500 font-medium">|</span>
+                       <p className="text-sm font-black text-[#DC2626]">{(order.totalAmount || 0).toLocaleString()} EGP</p>
+                    </div>
+                 </div>
+                 <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase border ${getStatusStyles(order.status)}`}>
+                    {order.status}
+                 </span>
+              </div>
 
-            {/* Bottom Row: Actions */}
-            <div className="flex gap-3 pt-2">
-               <div className="relative flex-1">
-                  <select 
-                    value={order.status}
-                    onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                    className="w-full bg-[#0F172A] border border-slate-600 text-white text-sm font-bold py-3 px-4 rounded-xl outline-none"
-                  >
-                    <option value="New">New</option>
-                    <option value="Processing">Processing</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-               </div>
-               <button 
-                  onClick={() => setSelectedOrder(order)}
-                  className="px-4 bg-[#DC2626] text-white rounded-xl flex items-center justify-center shadow-lg shadow-red-900/20 active:scale-95 transition-transform"
-               >
-                  <ArrowRight size={20} />
-               </button>
-            </div>
-          </GlassCard>
-        ))}
+              {/* Bottom Row: Actions */}
+              <div className="flex gap-3 pt-2">
+                 <div className="relative flex-1">
+                    <select 
+                      value={order.status}
+                      onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                      className="w-full bg-[#0F172A] border border-slate-600 text-white text-sm font-bold py-3 px-4 rounded-xl outline-none"
+                    >
+                      <option value="New">New</option>
+                      <option value="Processing">Processing</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                 </div>
+                 <button 
+                    onClick={() => setSelectedOrder(order)}
+                    className="px-4 bg-[#DC2626] text-white rounded-xl flex items-center justify-center shadow-lg shadow-red-900/20 active:scale-95 transition-transform"
+                 >
+                    <ArrowRight size={20} />
+                 </button>
+              </div>
+            </GlassCard>
+          ))
+        )}
       </div>
 
       {/* 4. MODAL: VIEW DETAILS */}
@@ -337,7 +379,7 @@ const Orders = () => {
                    <span className="px-3 py-1 bg-[#DC2626] text-white text-xs rounded-full">#{selectedOrder._id.slice(-6).toUpperCase()}</span>
                 </h3>
                 <div className="flex items-center gap-3 mt-2">
-                   {getPaymentBadge(selectedOrder.paymentMethod)} {/* ✅ Badge in Modal */}
+                   {getPaymentBadge(selectedOrder.paymentMethod)}
                    <p className="text-slate-400 text-sm flex items-center gap-1">
                       <Calendar size={12}/> {formatDate(selectedOrder.createdAt)}
                    </p>

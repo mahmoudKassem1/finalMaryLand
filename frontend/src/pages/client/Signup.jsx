@@ -41,7 +41,7 @@ const Signup = () => {
     if (result.success) {
       // ✅ Success Toast
       toast.success(lang === 'en' ? 'Account created! Please login.' : 'تم إنشاء الحساب! الرجاء تسجيل الدخول.');
-      navigate('/login');
+      navigate('/');
     } else {
       // ❌ Error Toast
       toast.error(result.error || (lang === 'en' ? 'Registration Failed' : 'فشل إنشاء الحساب'));
