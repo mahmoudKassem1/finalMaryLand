@@ -145,8 +145,14 @@ const Inventory = () => {
         finalImageUrl = await uploadImageToCloudinary();
       }
 
+      // ✅ SMART LOGIC: If category is specifically 'maryland-products', 
+      // we force isMaryland to true automatically.
+      if (editForm.category === 'maryland-products') { editForm.isMaryland = true; }
+      const finalIsMaryland = editForm.category === 'maryland-products' ? true : editForm.isMaryland;
+
       const { data } = await api.put(`/products/${editingProduct}`, {
         ...editForm,
+        isMaryland: finalIsMaryland,
         image: finalImageUrl 
       });
 

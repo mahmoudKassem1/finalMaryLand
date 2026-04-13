@@ -100,9 +100,9 @@ const forgetPassword = async (req, res) => {
 
     await user.save();
 
-    // ✅ FIX: Use CLIENT_URL (React) instead of localhost:3000
-    // If process.env.CLIENT_URL is not set, it defaults to http://localhost:5173
-    const frontendUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    // ✅ FIX: Use FRONTEND_URL (React) instead of localhost:3000
+    // If process.env.FRONTEND_URL is not set, it defaults to http://localhost:5173
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
     
     // Simple text message (The HTML template handles the styling now)

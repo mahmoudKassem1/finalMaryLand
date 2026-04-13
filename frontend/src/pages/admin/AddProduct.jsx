@@ -86,7 +86,7 @@ const AddProduct = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.title || !formData.price || !formData.description) {
@@ -103,12 +103,18 @@ const AddProduct = () => {
         imageUrl = await uploadImageToCloudinary();
       }
 
+      // ✅ SMART LOGIC: If category is specifically 'maryland-products', 
+      // we force isMaryland to true automatically.
+      if (formData.category === 'maryland-products') { formData.isMaryland = true; }
+      const finalIsMaryland = formData.category === 'maryland-products' ? true : formData.isMaryland;
+
       // Prepare Payload
       const payload = {
         ...formData,
+        isMaryland: finalIsMaryland,
         price: Number(formData.price), 
         stock: Number(formData.stock) || 0,
-        image: imageUrl // Sends string URL or empty string
+        image: imageUrl || "https://placehold.co/600x400?text=No+Image" 
       };
 
       // Send to Backend

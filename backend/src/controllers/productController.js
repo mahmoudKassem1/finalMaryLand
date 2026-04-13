@@ -5,8 +5,23 @@ const Product = require('../models/Product');
 // @access  Public
 const getProducts = async (req, res) => {
   try {
-    // Sort by isMaryland (-1 means true comes first) so they appear at top
-    const products = await Product.find({}).sort({ isMaryland: -1, createdAt: -1 });
+    let query = {};
+
+    // ✅ THE FIX: Intercept the category filter from the frontend
+    if (req.query.category) {
+      if (req.query.category === 'maryland-products') {
+        // If they clicked "Maryland Products", ignore the category string and search by the boolean flag
+        query.isMaryland = true; 
+      } else {
+        // Otherwise, search for the exact category string (e.g., "Vitamins")
+        query.category = req.query.category; 
+      }
+    }
+
+    // You can also add search keyword logic here if needed in the future
+
+    // Sort by isMaryland (-1 means true comes first) so they appear at top of general lists
+    const products = await Product.find(query).sort({ isMaryland: -1, createdAt: -1 });
     res.json({ products }); // Wrapped in object to match frontend expectation { products: [...] }
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -52,23 +67,23 @@ const deleteProduct = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
   try {
-    const { title, price, description, category, stock, image, isMaryland } = req.body;
-    
+    // ✅ Updated to include all fields matching your updateProduct logic
+    const { title, name, price, description, category, stock, image, isMaryland } = req.body;
+
     const product = new Product({
-      title,
+      title: title || name, // Fallback just in case your frontend sends 'name' instead of 'title'
       price,
       description,
-      category,
-      stock,
-      // ✅ FIX: Save to 'image' field (matches your new Model)
-      image: image, 
-      isMaryland: isMaryland || false,
+      category,     // Saves the actual category (e.g., "Vitamins")
+      stock: stock || 0,
+      image,
+      isMaryland: isMaryland || false,   // Saves the toggle switch state (true/false)
     });
 
     const createdProduct = await product.save();
     res.status(201).json(createdProduct);
   } catch (error) {
-    res.status(500).json({ message: 'Product creation failed: ' + error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 

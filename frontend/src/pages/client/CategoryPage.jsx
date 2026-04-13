@@ -29,18 +29,12 @@ const CategoryPage = () => {
       setVisibleCount(6); 
       
       try {
-        const { data } = await api.get('/products');
+        const { data } = await api.get(`/products?category=${slug}`);
         
         // Handle new API structure { products: [...] } or old [...]
         const allProducts = data.products || data || [];
         
-        // Filter by the category slug from URL
-        // We compare lowercase to ensure matches
-        const filtered = allProducts.filter(p => 
-          p.category && p.category.toLowerCase() === slug.toLowerCase()
-        );
-        
-        setProducts(filtered);
+        setProducts(allProducts);
       } catch (error) {
         console.error("Failed to load category", error);
         toast.error(lang === 'en' ? 'Failed to load products' : 'فشل تحميل المنتجات');
