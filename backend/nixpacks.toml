@@ -1,0 +1,15 @@
+[providers]
+# This forces Railway to use Node.js
+node = {}
+
+[phases.setup]
+# This explicitly installs Node.js version 20 (or whatever version you use)
+nixPkgs = ['nodejs_20', 'npm']
+
+[phases.build]
+# How to install dependencies
+cmds = ['npm install']
+
+[start]
+# How to start the server
+cmd = 'node server.js'
