@@ -1,6 +1,8 @@
 const User = require('../models/User'); // Ensure filename matches case (User.js vs user.js)
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto'); // Built into Node.js
+const sendEmail = require('../utils/sendEmail'); // Adjust path if your sendEmail is in a different folder
 
 // Helper: Generate JWT Token
 const generateToken = (id) => {
@@ -14,7 +16,6 @@ const generateToken = (id) => {
 // @desc    Register a new user
 // @route   POST /api/users/register
 const registerUser = async (req, res) => {
-  // ✅ 1. Extract the address fields from the frontend request
   let { name, email, password, phone, street, aptNumber, city } = req.body;
 
   email = email.toLowerCase();
@@ -26,7 +27,6 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // ✅ 2. Format the initial address object
     const initialAddress = {
       street: street,
       aptNumber: aptNumber || '',
@@ -35,13 +35,12 @@ const registerUser = async (req, res) => {
       isDefault: true
     };
 
-    // ✅ 3. Save the addresses array into MongoDB
     const user = await User.create({
       name,
       email,
       password,
       phone,
-      addresses: [initialAddress] // <--- This is what fixes the bug
+      addresses: [initialAddress] 
     });
 
     if (user) {
@@ -51,7 +50,7 @@ const registerUser = async (req, res) => {
         email: user.email,
         phone: user.phone,
         isAdmin: user.role === 'admin',
-        addresses: user.addresses, // ✅ 4. Send the new address back to the React app
+        addresses: user.addresses, 
         token: generateToken(user._id),
       });
     } else {
@@ -68,7 +67,6 @@ const registerUser = async (req, res) => {
 const authUser = async (req, res) => {
   let { email, password } = req.body;
 
-  // ✅ Fix 1: Normalize email to lowercase
   email = email.toLowerCase();
 
   try {
@@ -130,7 +128,6 @@ const updateUserProfile = async (req, res) => {
       user.name = req.body.name || user.name;
       user.phone = req.body.phone || user.phone;
 
-      // ✅ Fix 2: Check if new email is already taken
       if (req.body.email && req.body.email !== user.email) {
         const emailExists = await User.findOne({ email: req.body.email.toLowerCase() });
         if (emailExists) {
@@ -139,13 +136,11 @@ const updateUserProfile = async (req, res) => {
         user.email = req.body.email.toLowerCase();
       }
 
-      // Update addresses array
       if (req.body.addresses) {
         user.addresses = req.body.addresses;
         user.markModified('addresses');
       }
 
-      // Update password if provided
       if (req.body.password) {
         if (!req.body.oldPassword) {
           return res.status(400).json({ message: 'Old password is required to set a new one' });
@@ -189,7 +184,6 @@ const addAddress = async (req, res) => {
     if (user) {
       user.addresses.push(req.body);
       await user.save();
-      // Return only the new address or the full list? Usually full list is safer for state sync.
       res.status(201).json(user.addresses);
     } else {
       res.status(404).json({ message: 'User not found' });
@@ -207,7 +201,6 @@ const updateAddress = async (req, res) => {
     if (user) {
       const address = user.addresses.id(req.params.id);
       
-      // ✅ Fix 3: Ensure address exists
       if (!address) {
         return res.status(404).json({ message: 'Address not found' });
       }
@@ -215,7 +208,6 @@ const updateAddress = async (req, res) => {
       address.street = req.body.street || address.street;
       address.city = req.body.city || address.city;
       address.phone = req.body.phone || address.phone;
-      // Add other fields if your address schema has them (e.g. state, zip)
 
       await user.save();
       res.json(user.addresses);
@@ -233,7 +225,6 @@ const deleteAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (user) {
-      // Use Mongoose pull method for cleaner deletion by ID
       user.addresses.pull({ _id: req.params.id }); 
       await user.save();
       res.json(user.addresses);
@@ -245,6 +236,97 @@ const deleteAddress = async (req, res) => {
   }
 };
 
+// --- PASSWORD RESET CONTROLLERS ---
+
+// @desc    Forgot Password - Generates token and sends email
+// @route   POST /api/users/forgotpassword
+// @access  Public
+const forgotPassword = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({ message: 'There is no user with that email' });
+    }
+
+    // 1. Generate a raw random token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+
+    // 2. Hash the token and save it to the database
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    
+    // 3. Set expiration to 10 minutes from now
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    // 4. Create the reset URL pulling from the environment variable
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+
+    // 5. Send the email
+    const message = `You have requested a password reset for your Maryland Pharmacy account. Please click the button below to set a new password.`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Maryland Pharmacy - Password Reset',
+        message: message,
+        ctaUrl: resetUrl,
+        ctaText: 'Reset My Password'
+      });
+
+      res.status(200).json({ message: 'Email sent successfully' });
+    } catch (error) {
+      // If email fails, wipe the token from the database
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      console.error("Email Error:", error);
+      return res.status(500).json({ message: 'Email could not be sent' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Reset Password - Verifies token and saves new password
+// @route   PUT /api/users/resetpassword/:resettoken
+// @access  Public
+const resetPassword = async (req, res) => {
+  try {
+    // 1. Re-hash the token from the URL to compare it with the DB
+    const resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(req.params.resettoken)
+      .digest('hex');
+
+    // 2. Find user by token AND ensure the token hasn't expired
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired password reset token' });
+    }
+
+    // 3. Set the new password
+    user.password = req.body.password;
+
+    // 4. Wipe the reset tokens from the database
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: 'Password has been reset successfully. You can now log in.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   authUser,
@@ -252,5 +334,7 @@ module.exports = {
   updateUserProfile,
   addAddress,
   updateAddress,
-  deleteAddress
+  deleteAddress,
+  forgotPassword,
+  resetPassword
 };
