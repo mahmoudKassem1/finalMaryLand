@@ -9,6 +9,15 @@ const sendEmail = async (options) => {
     // This ensures .env is fully loaded before we try to use the key
     const resend = new Resend(process.env.RESEND_API_KEY);
 
+    // ✅ THE FIX: Intercept the localhost link and swap it for the live Railway domain
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    let safeCtaUrl = options.ctaUrl;
+    
+    // If the link contains localhost, safely replace it with the environment URL
+    if (safeCtaUrl && safeCtaUrl.includes('http://localhost:5173')) {
+        safeCtaUrl = safeCtaUrl.replace('http://localhost:5173', frontendUrl);
+    }
+
     let contentBody = '';
     if (options.html) {
       contentBody = options.html;
@@ -17,16 +26,17 @@ const sendEmail = async (options) => {
       contentBody = `<p style="font-size: 16px; margin-bottom: 20px;">${messageText.replace(/\n/g, '<br />')}</p>`;
     }
 
-    const buttonHtml = options.ctaUrl ? `
+    // Notice we are using safeCtaUrl here instead of options.ctaUrl
+    const buttonHtml = safeCtaUrl ? `
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${options.ctaUrl}" style="background-color: #DC2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(220, 38, 38, 0.3);">
+        <a href="${safeCtaUrl}" style="background-color: #DC2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(220, 38, 38, 0.3);">
           ${options.ctaText || 'Click Here'}
         </a>
       </div>
       <p style="font-size: 14px; color: #64748b; margin-top: 20px; text-align: center;">
         If the button above doesn't work, use this link:
         <br>
-        <a href="${options.ctaUrl}" style="color: #DC2626; word-break: break-all;">${options.ctaUrl}</a>
+        <a href="${safeCtaUrl}" style="color: #DC2626; word-break: break-all;">${safeCtaUrl}</a>
       </p>
     ` : '';
 
