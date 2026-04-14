@@ -1,80 +1,78 @@
-const { Resend } = require('resend');
-
-// ⚠️ We do NOT initialize it here anymore to prevent startup crashes.
-// const resend = new Resend(process.env.RESEND_API_KEY); <--- REMOVED
+const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
   try {
-    // ✅ Initialize Resend INSIDE the function
-    // This ensures .env is fully loaded before we try to use the key
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    // 1. Setup the Gmail Transporter
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST, // smtp.gmail.com
+      port: process.env.EMAIL_PORT, // 587
+      secure: false, // true for 465, false for 587
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // Your 16-character App Password
+      },
+    });
 
-    // ✅ THE FIX: Intercept the localhost link and swap it for the live Railway domain
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     let safeCtaUrl = options.ctaUrl;
     
-    // If the link contains localhost, safely replace it with the environment URL
+    // Handle Localhost replacement
     if (safeCtaUrl && safeCtaUrl.includes('http://localhost:5173')) {
         safeCtaUrl = safeCtaUrl.replace('http://localhost:5173', frontendUrl);
     }
 
-    let contentBody = '';
-    if (options.html) {
-      contentBody = options.html;
+    // ✅ RECIPIENT LOGIC: Format for Nodemailer (Comma separated string)
+    const recipientInput = options.email || options.to;
+    let recipients;
+
+    if (Array.isArray(recipientInput)) {
+      recipients = recipientInput.join(', ');
     } else {
-      const messageText = options.message || "No specific message text provided.";
-      contentBody = `<p style="font-size: 16px; margin-bottom: 20px;">${messageText.replace(/\n/g, '<br />')}</p>`;
+      recipients = recipientInput; 
     }
 
-    // Notice we are using safeCtaUrl here instead of options.ctaUrl
+    let contentBody = options.html || `<p style="font-size: 16px; margin-bottom: 20px;">${(options.message || "").replace(/\n/g, '<br />')}</p>`;
+
     const buttonHtml = safeCtaUrl ? `
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${safeCtaUrl}" style="background-color: #DC2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(220, 38, 38, 0.3);">
+        <a href="${safeCtaUrl}" style="background-color: #DC2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">
           ${options.ctaText || 'Click Here'}
         </a>
       </div>
-      <p style="font-size: 14px; color: #64748b; margin-top: 20px; text-align: center;">
-        If the button above doesn't work, use this link:
-        <br>
-        <a href="${safeCtaUrl}" style="color: #DC2626; word-break: break-all;">${safeCtaUrl}</a>
-      </p>
     ` : '';
 
     const htmlTemplate = `
-      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+      <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
         <div style="background-color: #DC2626; padding: 30px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Maryland Pharmacy</h1>
-          <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 14px; font-weight: 500;">Your Trusted Healthcare Partner</p>
+          <h1 style="color: #ffffff; margin: 0; font-size: 26px;">Maryland Pharmacy</h1>
         </div>
         <div style="padding: 40px 30px; color: #334155; line-height: 1.6;">
-          <h2 style="color: #1e293b; font-size: 20px; margin-top: 0; font-weight: 700;">Hello,</h2>
           ${contentBody}
           ${buttonHtml}
-          <div style="margin-top: 30px; padding: 15px; background-color: #f8fafc; border-left: 4px solid #DC2626; border-radius: 4px; font-size: 13px; color: #475569;">
-            <strong>Notification:</strong> This is an automated email from Maryland Pharmacy system.
-          </div>
         </div>
-        <div style="background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
-          <p style="margin: 0; font-weight: 600;">&copy; ${new Date().getFullYear()} Maryland Pharmacy</p>
-          <p style="margin: 5px 0;">Alexandria, Egypt</p>
+        <div style="background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8;">
+          <p>&copy; ${new Date().getFullYear()} Maryland Pharmacy - Alexandria, Egypt</p>
         </div>
       </div>
     `;
 
-    // Send the email
-    // Note: Free tier requires 'to' be your own email until you verify a domain
-    await resend.emails.send({
-      from: 'Maryland Pharmacy <onboarding@resend.dev>',
-      to: options.email || options.to,
-      subject: options.subject,
-      html: htmlTemplate,
-    });
+    // 2. Send via SMTP
+    const info = await transporter.sendMail({
+  // 1. Ensure the 'from' matches the EMAIL_USER exactly
+  from: `"Maryland Pharmacy" <${process.env.EMAIL_USER}>`, 
+  to: recipients,
+  subject: options.subject,
+  html: htmlTemplate,
+  // 2. Add a List-Unsubscribe header (even if not used, it looks more 'legit' to filters)
+  headers: {
+    "X-Entity-Ref-ID": new Date().getTime(),
+  }
+});
 
-    console.log("✅ Email sent via Resend API");
+    console.log("✅ SMTP Email sent: %s", info.messageId);
 
   } catch (error) {
-    console.error("❌ Resend Email Failed:", error.message);
-    // Don't throw error to prevent crashing the server
+    console.error("❌ SMTP Email Failed:", error.message);
   }
 };
 
