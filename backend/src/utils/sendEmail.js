@@ -2,34 +2,29 @@ const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
   try {
-    // 1. Setup the Gmail Transporter
+    // 1. Setup the Gmail Transporter with Railway-optimized settings
     const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST, // smtp.gmail.com
-      port: process.env.EMAIL_PORT, // 587
-      secure: false, // true for 465, false for 587
+      host: 'smtp.gmail.com',
+      port: 465, // ✅ Use 465 for SSL (More stable on Railway than 587)
+      secure: true, // ✅ Must be true for port 465
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // Your 16-character App Password
+        pass: process.env.EMAIL_PASS,
       },
+      // ✅ Critical for Railway: Prevents the "Infinite Loading" bug
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000,   // 10 seconds
     });
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     let safeCtaUrl = options.ctaUrl;
     
-    // Handle Localhost replacement
     if (safeCtaUrl && safeCtaUrl.includes('http://localhost:5173')) {
         safeCtaUrl = safeCtaUrl.replace('http://localhost:5173', frontendUrl);
     }
 
-    // ✅ RECIPIENT LOGIC: Format for Nodemailer (Comma separated string)
     const recipientInput = options.email || options.to;
-    let recipients;
-
-    if (Array.isArray(recipientInput)) {
-      recipients = recipientInput.join(', ');
-    } else {
-      recipients = recipientInput; 
-    }
+    const recipients = Array.isArray(recipientInput) ? recipientInput.join(', ') : recipientInput;
 
     let contentBody = options.html || `<p style="font-size: 16px; margin-bottom: 20px;">${(options.message || "").replace(/\n/g, '<br />')}</p>`;
 
@@ -58,21 +53,22 @@ const sendEmail = async (options) => {
 
     // 2. Send via SMTP
     const info = await transporter.sendMail({
-  // 1. Ensure the 'from' matches the EMAIL_USER exactly
-  from: `"Maryland Pharmacy" <${process.env.EMAIL_USER}>`, 
-  to: recipients,
-  subject: options.subject,
-  html: htmlTemplate,
-  // 2. Add a List-Unsubscribe header (even if not used, it looks more 'legit' to filters)
-  headers: {
-    "X-Entity-Ref-ID": new Date().getTime(),
-  }
-});
+      from: `"Maryland Pharmacy" <${process.env.EMAIL_USER}>`, 
+      to: recipients,
+      subject: options.subject,
+      html: htmlTemplate,
+      headers: {
+        "X-Entity-Ref-ID": new Date().getTime().toString(),
+      }
+    });
 
     console.log("✅ SMTP Email sent: %s", info.messageId);
+    return { success: true, messageId: info.messageId };
 
   } catch (error) {
     console.error("❌ SMTP Email Failed:", error.message);
+    // Return false instead of throwing to prevent crashing the order process
+    return { success: false, error: error.message };
   }
 };
 
