@@ -1,30 +1,21 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const sendEmail = async (options) => {
   try {
-    // 1. Setup the Gmail Transporter with Railway-optimized settings
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465, // ✅ Use 465 for SSL (More stable on Railway than 587)
-      secure: true, // ✅ Must be true for port 465
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      // ✅ Critical for Railway: Prevents the "Infinite Loading" bug
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000,   // 10 seconds
-    });
+    // 1. Initialize Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     let safeCtaUrl = options.ctaUrl;
     
+    // Handle Localhost replacement
     if (safeCtaUrl && safeCtaUrl.includes('http://localhost:5173')) {
         safeCtaUrl = safeCtaUrl.replace('http://localhost:5173', frontendUrl);
     }
 
-    const recipientInput = options.email || options.to;
-    const recipients = Array.isArray(recipientInput) ? recipientInput.join(', ') : recipientInput;
+    // ✅ RECIPIENT LOGIC:
+    // Resend SDK accepts either a single string or an array of strings.
+    const recipients = options.email || options.to;
 
     let contentBody = options.html || `<p style="font-size: 16px; margin-bottom: 20px;">${(options.message || "").replace(/\n/g, '<br />')}</p>`;
 
@@ -51,23 +42,25 @@ const sendEmail = async (options) => {
       </div>
     `;
 
-    // 2. Send via SMTP
-    const info = await transporter.sendMail({
-      from: `"Maryland Pharmacy" <${process.env.EMAIL_USER}>`, 
+    // 2. Send via Resend API
+    // NOTE: 'from' must be onboarding@resend.dev until you verify your custom domain tomorrow
+    const { data, error } = await resend.emails.send({
+      from: 'Maryland Pharmacy <onboarding@resend.dev>',
       to: recipients,
       subject: options.subject,
       html: htmlTemplate,
-      headers: {
-        "X-Entity-Ref-ID": new Date().getTime().toString(),
-      }
     });
 
-    console.log("✅ SMTP Email sent: %s", info.messageId);
-    return { success: true, messageId: info.messageId };
+    if (error) {
+      console.error("❌ Resend API Error:", error.message);
+      return { success: false, error: error.message };
+    }
+
+    console.log("✅ Resend Email sent successfully:", data.id);
+    return { success: true, id: data.id };
 
   } catch (error) {
-    console.error("❌ SMTP Email Failed:", error.message);
-    // Return false instead of throwing to prevent crashing the order process
+    console.error("❌ Resend Utility Failed:", error.message);
     return { success: false, error: error.message };
   }
 };
