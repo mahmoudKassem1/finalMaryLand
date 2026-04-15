@@ -11,7 +11,10 @@ import api from '../../utils/axios';
 
 
 // ✅ CONFIG: Payment Details
-const WHATSAPP_NUMBERS = ['+201000686866', '+201000076890', '+201033520476'];
+// ✅ GOOD: Pure numbers only (Country Code + Phone Number)
+const WHATSAPP_NUMBER = '201000076890';
+
+
 
 const PAYMENT_INFO = {
   InstaPay: {
@@ -155,14 +158,45 @@ const CheckoutContent = () => {
   };
 
   const handleWhatsAppClick = () => {
-    const randomNum = WHATSAPP_NUMBERS[Math.floor(Math.random() * WHATSAPP_NUMBERS.length)];
     const message = lang === 'en' 
       ? `Hello, I have sent the payment via ${paymentMethod}. Here is the screenshot.` 
       : `مرحباً، لقد قمت بالتحويل عبر ${paymentMethod === 'InstaPay' ? 'انستا باي' : 'فودافون كاش'}. إليك صورة التحويل.`;
-    window.open(`https://wa.me/${randomNum}?text=${encodeURIComponent(message)}`, '_blank');
+    
+    // ✅ Uses the single hardcoded number
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // --- PLACE ORDER ---
+  const subtotal = typeof getCartTotal === 'function' ? getCartTotal() : 0;
+  const shipping = subtotal > 500 ? 0 : deliveryFee;
+  const total = subtotal + shipping;
+
+  // --- 3. WHATSAPP MESSAGE GENERATOR ---
+  const generateWhatsAppMessage = (addr) => {
+    const itemsList = cartItems.map(item => `• ${item.title} (x${item.quantity || 1}) - ${item.price * (item.quantity || 1)} EGP`).join('\n');
+    
+    const message = `*طلب جديد من Maryland Pharmacy* 🌿
+------------------------------
+*بيانات العميل:*
+👤 الاسم: ${user.name}
+📞 الهاتف: ${user.phone || 'غير مسجل'}
+📍 العنوان: ${addr.street}، مبنى ${addr.aptNumber}، الإسكندرية
+
+*تفاصيل الطلب:*
+${itemsList}
+
+*الحساب الإجمالي:*
+💰 المجموع: ${subtotal} EGP
+🚚 التوصيل: ${shipping === 0 ? 'مجاني' : shipping + ' EGP'}
+⭐ الإجمالي النهائي: ${total} EGP
+
+*طريقة الدفع:* ${paymentMethod === 'CashOnDelivery' ? 'الدفع عند الاستلام' : paymentMethod}
+------------------------------
+_يرجى تأكيد الطلب _`;
+
+    return encodeURIComponent(message);
+  };
+
+  // --- 4. PLACE ORDER WITH WHATSAPP FLOW & FIX FOR PAYLOAD ---
   const handlePlaceOrder = async () => {
     // 1. Validate Address
     const selectedAddr = addresses.find(a => a._id === selectedAddrId);
@@ -180,34 +214,43 @@ const CheckoutContent = () => {
       phone: user.phone || '0000000000'
     };
 
-    // 2. Prepare Payload
     // If Manual Payment, we set transactionId to "See WhatsApp" automatically
     let manualTxId = null;
     if (paymentMethod === 'InstaPay' || paymentMethod === 'VodafoneCash') {
       manualTxId = "See WhatsApp";
     }
 
+    // 2. Prepare Payload (✅ FIX: map orderItems to explicitly include _id)
     const payload = {
+      orderItems: cartItems.map(item => ({
+        _id: item._id, 
+        quantity: item.quantity || 1
+      })),
       ...finalAddress,
       paymentMethod,
       transactionId: manualTxId
     };
 
+    // 3. Save to Database First
     const result = await checkout(payload);
 
     if (result.success) {
-      toast.success(lang === 'en' ? 'Order Placed Successfully!' : 'تم تسجيل الطلب بنجاح');
-      navigate('/'); 
+      // 4. Generate Message and Redirect to WhatsApp
+      const waLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${generateWhatsAppMessage(selectedAddr)}`;
+      
+      toast.success(lang === 'en' ? 'Redirecting to WhatsApp...' : 'تم تسجيل الطلب، جاري التحويل للواتساب...');
+      
+      // Open WhatsApp safely
+      window.open(waLink, '_blank');
+      
+      // Redirect to Home after opening WhatsApp
+      setTimeout(() => navigate('/'), 1500); 
     } else {
       toast.error(result.error || 'Checkout Failed');
     }
     
     setIsProcessing(false);
   };
-
-  const subtotal = typeof getCartTotal === 'function' ? getCartTotal() : 0;
-  const shipping = subtotal > 500 ? 0 : deliveryFee;
-  const total = subtotal + shipping;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-20" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -370,12 +413,12 @@ const CheckoutContent = () => {
             </div>
 
             <SquircleButton 
-              variant="primary" fullWidth loading={isProcessing} icon={ArrowRight}
+              variant="primary" fullWidth loading={isProcessing} icon={MessageCircle}
               onClick={handlePlaceOrder}
               disabled={mode !== 'list' || !selectedAddrId}
               className={`mt-6 ${(mode !== 'list' || !selectedAddrId) ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
             >
-              {lang === 'en' ? 'Place Order' : 'تأكيد الطلب'}
+              {lang === 'en' ? 'Confirm via WhatsApp' : 'تأكيد الطلب عبر واتساب'}
             </SquircleButton>
           </GlassCard>
         </div>

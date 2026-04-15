@@ -16,7 +16,6 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (product) => {
     setCartItems((prev) => {
-      // Backend uses _id, so we check for item._id
       const existingItem = prev.find(item => item._id === product._id);
       if (existingItem) {
         return prev.map(item =>
@@ -50,19 +49,14 @@ export const CartProvider = ({ children }) => {
     return cartItems.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
   };
 
-  // --- NEW: CHECKOUT LOGIC (FIXED) ---
-  // ✅ Now accepts a single object 'orderData' containing address + payment info
+  // --- CHECKOUT LOGIC ---
   const checkout = async (orderData) => {
     try {
-      // 1. Map cartItems to backend format
       const orderItems = cartItems.map(item => ({
-        product: item._id,
-        quantity: item.quantity
+        product: item._id, // Maps properly for backend schema
+        quantity: item.quantity || 1
       }));
 
-      // 2. Construct Payload
-      // We extract address fields into 'shippingAddress' object
-      // We pass paymentMethod and transactionId at the root level
       const payload = {
         orderItems,
         shippingAddress: {
@@ -71,17 +65,36 @@ export const CartProvider = ({ children }) => {
           aptNumber: orderData.aptNumber,
           phone: orderData.phone,
         },
-        paymentMethod: orderData.paymentMethod, // ✅ Correctly sent now
-        transactionId: orderData.transactionId  // ✅ Correctly sent now
+        paymentMethod: orderData.paymentMethod,
+        transactionId: orderData.transactionId  
       };
 
-      const { data } = await api.post('/orders', payload);
+      // ✅ SAFETY FIX: Explicitly grab token to ensure it sends
+      let token = '';
+      const userStorage = localStorage.getItem('user');
+      if (userStorage) {
+        token = JSON.parse(userStorage).token;
+      }
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+
+      // ✅ Send payload WITH strict auth headers
+      const { data } = await api.post('/orders', payload, config);
       
-      // If successful, empty the cart
       clearCart();
       return { success: true, order: data };
     } catch (error) {
       console.error("Checkout Failed:", error.response?.data?.message);
+      
+      // Handle the "Ghost Token" unauthorized error gracefully
+      if (error.response?.status === 401) {
+         return { success: false, error: "Session expired. Please log out and log in again." };
+      }
+
       return { 
         success: false, 
         error: error.response?.data?.message || "Failed to place order" 
@@ -97,7 +110,7 @@ export const CartProvider = ({ children }) => {
       updateQuantity, 
       clearCart, 
       getCartTotal,
-      checkout // EXPORTED FOR THE CHECKOUT PAGE
+      checkout 
     }}>
       {children}
     </CartContext.Provider>

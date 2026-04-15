@@ -1,19 +1,29 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Setting = require('../models/Setting');
-const sendEmail = require('../utils/sendEmail'); // ✅ Import Email Utility
-// @desc    Create new order (Client)
-const addOrderItems = async (req, res) => {
-  const { 
-    orderItems, 
-    shippingAddress, 
-    paymentMethod,
-    transactionId 
-  } = req.body;
+const sendEmail = require('../utils/sendEmail'); 
 
+const addOrderItems = async (req, res) => {
   try {
-    if (!orderItems || orderItems.length === 0) {
-      return res.status(400).json({ message: 'No order items' });
+    console.log("🚀 --- NEW ORDER ATTEMPT ---");
+    console.log("USER DATA:", req.user ? "Exists" : "NULL!");
+    console.log("BODY DATA:", JSON.stringify(req.body).substring(0, 100) + "...");
+
+    // 🚨 1. Check if User is null
+    if (!req.user) {
+      return res.status(401).json({ message: 'Auth Error: req.user is null. Please log in again.' });
+    }
+
+    const { 
+      orderItems, 
+      shippingAddress, 
+      paymentMethod,
+      transactionId 
+    } = req.body;
+
+    // 🚨 2. Check if orderItems is valid
+    if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
+      return res.status(400).json({ message: 'No order items provided' });
     }
 
     const settings = await Setting.findOne();
@@ -31,28 +41,39 @@ const addOrderItems = async (req, res) => {
     let itemsPrice = 0;
 
     for (const item of orderItems) {
-      const dbProduct = await Product.findById(item._id || item.product);
-      if (dbProduct) {
-        itemsPrice += dbProduct.price * Number(item.quantity || 1);
-        dbOrderItems.push({
-          product: dbProduct._id,
-          name: dbProduct.title,  
-          image: dbProduct.imageURL || dbProduct.image, 
-          price: dbProduct.price, 
-          qty: Number(item.quantity || item.qty || 1)
-        });
+      // 🚨 3. Check if the item object itself is null (Corrupted frontend cart)
+      if (!item) {
+        return res.status(400).json({ message: 'Corrupted cart item. Please clear your cart.' });
       }
-    }
 
-    if (dbOrderItems.length === 0) {
-      return res.status(400).json({ message: 'No valid products found' });
+      const productId = item._id || item.product;
+      
+      if (!productId) {
+         return res.status(400).json({ message: 'Invalid product ID in cart' });
+      }
+
+      const dbProduct = await Product.findById(productId);
+      
+      if (!dbProduct) {
+        return res.status(400).json({ message: `Product no longer available. Clear cart.` });
+      }
+
+      itemsPrice += dbProduct.price * Number(item.quantity || 1);
+      dbOrderItems.push({
+        product: dbProduct._id,
+        name: dbProduct.title,  
+        image: dbProduct.image || dbProduct.imageURL, 
+        price: dbProduct.price, 
+        qty: Number(item.quantity || item.qty || 1)
+      });
     }
 
     const deliveryFee = itemsPrice > 500 ? 0 : baseDeliveryFee;
     const totalAmount = itemsPrice + deliveryFee;
 
+    // 🚨 4. Safe Order Creation
     const order = new Order({
-      user: req.user._id,
+      user: req.user._id, // We verified req.user exists above!
       orderItems: dbOrderItems,
       shippingAddress: validAddress,
       paymentMethod: finalPaymentMethod,
@@ -72,14 +93,10 @@ const addOrderItems = async (req, res) => {
 
     // Update Stock
     for (const item of dbOrderItems) {
-       await Product.findByIdAndUpdate(item.product, {
-         $inc: { stock: -item.qty }
-       });
+       await Product.findByIdAndUpdate(item.product, { $inc: { stock: -item.qty } });
     }
 
-    // ---------------------------------------------------------
-    // ✅ BACKGROUND EMAIL NOTIFICATION (Non-Blocking)
-    // ---------------------------------------------------------
+    // Email Notification (Non-Blocking)
     const sendNotification = async () => {
       try {
         let recipients = [];
@@ -108,7 +125,6 @@ const addOrderItems = async (req, res) => {
             <p>${validAddress.street}, ${validAddress.city}<br>Phone: ${validAddress.phone}</p>
           `;
 
-          // ✅ No 'await' here inside the controller's main flow
           sendEmail({
             to: recipients, 
             subject: `New Order (${finalPaymentMethod}) - ${req.user.name}`,
@@ -120,22 +136,16 @@ const addOrderItems = async (req, res) => {
       }
     };
 
-    // Trigger the email but don't wait for it
     sendNotification();
 
-    // ---------------------------------------------------------
-    // ✅ RESPOND IMMEDIATELY TO CLIENT
-    // ---------------------------------------------------------
     res.status(201).json(createdOrder);
 
   } catch (error) {
-    console.error("Order Error:", error.message);
+    console.error("🔥 FATAL ORDER ERROR:", error);
     res.status(500).json({ message: 'Order Failed: ' + error.message });
   }
 };
-// @desc    Get order by ID
-// @route   GET /api/orders/:id
-// @access  Private
+
 const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('user', 'name email');
@@ -150,9 +160,6 @@ const getOrderById = async (req, res) => {
   }
 };
 
-// @desc    Get logged in user orders
-// @route   GET /api/orders/myorders
-// @access  Private
 const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id })
@@ -169,9 +176,6 @@ const getMyOrders = async (req, res) => {
   }
 };
 
-// @desc    Get all orders (Admin Only)
-// @route   GET /api/orders
-// @access  Private/Admin
 const getOrders = async (req, res) => {
   try {
     const orders = await Order.find({})
@@ -183,9 +187,6 @@ const getOrders = async (req, res) => {
   }
 };
 
-// @desc    Update order status (Admin Only)
-// @route   PUT /api/orders/:id/status
-// @access  Private/Admin
 const updateOrderStatus = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
