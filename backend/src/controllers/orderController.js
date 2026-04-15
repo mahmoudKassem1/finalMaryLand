@@ -68,7 +68,7 @@ const addOrderItems = async (req, res) => {
       });
     }
 
-    const deliveryFee = itemsPrice > 500 ? 0 : baseDeliveryFee;
+    const deliveryFee = baseDeliveryFee;
     const totalAmount = itemsPrice + deliveryFee;
 
     // 🚨 4. Safe Order Creation

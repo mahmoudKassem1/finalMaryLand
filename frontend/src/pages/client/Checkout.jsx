@@ -167,7 +167,7 @@ const CheckoutContent = () => {
   };
 
   const subtotal = typeof getCartTotal === 'function' ? getCartTotal() : 0;
-  const shipping = subtotal > 500 ? 0 : deliveryFee;
+  const shipping = deliveryFee;
   const total = subtotal + shipping;
 
   // --- 3. WHATSAPP MESSAGE GENERATOR ---
