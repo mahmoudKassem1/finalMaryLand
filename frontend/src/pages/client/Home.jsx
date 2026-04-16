@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react'; // Added useRef
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   ShoppingCart, AlertCircle, Loader2, ChevronRight, 
@@ -22,6 +22,9 @@ const Home = () => {
   const { lang, t } = useApp();
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  
+  // ✅ Ref for Best Sellers Section
+  const bestSellersRef = useRef(null);
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +38,7 @@ const Home = () => {
         setProducts(data.products || data);
       } catch (err) {
         setError(lang === 'en' ? "Failed to load products." : "فشل تحميل المنتجات.");
-        console.error("Error fetching products:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -60,6 +63,11 @@ const Home = () => {
 
   const marylandProducts = useMemo(() => products.filter(p => p.isMaryland), [products]);
 
+  // ✅ Smooth Scroll Function
+  const scrollToBestSellers = () => {
+    bestSellersRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
       <Loader2 size={40} className="animate-spin mb-4 text-[#DC2626]" />
@@ -78,40 +86,36 @@ const Home = () => {
   return (
     <div className="pb-8 -mt-[90px] overflow-x-hidden bg-[#f8fafc]"> 
       
-      {/* 1. HERO SECTION - Enhanced Visibility on Mobile */}
-      <section className="relative w-full overflow-hidden bg-[#0F172A] z-0">
-        {/* Set a min-height (min-h-[450px]) on mobile to prevent the squeezed look */}
-        <div className="relative w-full min-h-[450px] sm:h-[700px]">
+      {/* 1. HERO SECTION - Fixed Padding and Image Fit */}
+      <section className="relative w-full overflow-hidden bg-black z-0">
+        {/* Added aspect-video on mobile so the height matches the photo width automatically */}
+        <div className="relative w-full aspect-[4/3] sm:aspect-auto sm:h-[700px] flex items-center justify-center">
           <img 
             src={HeroImg} 
             alt="Pharmacy" 
-            /* On mobile, use h-full + object-cover to ensure the area is filled beautifully */
-            className="absolute inset-0 w-full h-full object-cover sm:object-cover block" 
+            className="w-full h-full object-cover sm:object-cover block" 
           />
-          {/* Darker overlay for mobile to ensure CTA text pop */}
-          <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-black/80 via-black/40 sm:via-black/20 to-transparent flex items-center">
-            <div className="container mx-auto px-6 sm:px-12 text-white pt-[100px] sm:pt-[112px]">
-              <div className="max-w-2xl space-y-5 sm:space-y-6 text-center sm:text-left">
-                <h1 className="text-4xl sm:text-7xl font-black uppercase leading-[0.95] sm:leading-[0.9] drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-                  {lang === 'en' ? "Trusted" : "رعاية"} <br />
-                  <span className="text-[#DC2626] drop-shadow-[0_0_30px_rgba(220,38,38,0.7)]">
-                    {lang === 'en' ? "Care" : "موثوقة"}
-                  </span>
-                </h1>
-                
-                {/* Mobile-friendly description */}
-                <p className="text-slate-200 text-sm sm:text-lg font-medium max-w-sm mx-auto sm:mx-0">
-                  {lang === 'en' 
-                    ? "Premium pharmaceutical products and expert care at your fingertips." 
-                    : "منتجات صيدلانية متميزة ورعاية خبراء بين يديك."}
-                </p>
+          <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-black/70 via-black/20 to-transparent flex items-center">
+            <div className="container mx-auto px-6 sm:px-12 text-white pt-[60px] sm:pt-[112px]">
+              <div className="max-w-2xl space-y-3 sm:space-y-6">
+                <div className="space-y-1 sm:space-y-2">
+                  <h1 className="text-3xl sm:text-7xl font-black uppercase leading-[0.9] drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                    <span className="whitespace-nowrap">{lang === 'en' ? "Trusted" : "رعاية"}</span> <br />
+                    <span className="text-[#DC2626] drop-shadow-[0_0_30px_rgba(220,38,38,0.7)] whitespace-nowrap">
+                      {lang === 'en' ? "Care" : "موثوقة"}
+                    </span>
+                  </h1>
+                  <p className="text-slate-300 text-[10px] sm:text-lg font-bold uppercase tracking-[0.2em] opacity-90">
+                    {lang === 'en' ? "Quality Pharmaceutical Excellence" : "تميز دوائي بجودة عالية"}
+                  </p>
+                </div>
 
-                <div className="relative group w-fit mx-auto sm:mx-0 pt-2">
+                <div className="relative group w-fit pt-2">
                     <div className="absolute -inset-1 bg-[#DC2626] rounded-xl blur-xl opacity-50 group-hover:opacity-100 transition duration-500"></div>
                     <SquircleButton 
                       variant="primary" 
-                      className="relative !py-4 sm:!py-5 !px-10 sm:!px-12 text-base sm:text-lg"
-                      onClick={() => navigate('/category/medication')}
+                      className="relative !py-2.5 sm:!py-5 !px-7 sm:!px-12 text-xs sm:text-lg shadow-lg"
+                      onClick={scrollToBestSellers} // ✅ Triggers Scroll
                     >
                       {lang === 'en' ? "Shop Now" : "تسوق الآن"}
                     </SquircleButton>
@@ -145,22 +149,43 @@ const Home = () => {
       </section>
 
       {/* 3. CATEGORIES SCROLLER */}
-      <section className="py-16 mt-4 sm:mt-10 bg-slate-50/50"> 
-        <div className="container mx-auto px-4">
-          <div className="flex overflow-x-auto gap-6 sm:gap-12 pb-6 no-scrollbar snap-x justify-start sm:justify-center">
-            {categories.map((cat) => (
-              <Link key={cat.id} to={cat.path} className="flex flex-col items-center gap-4 shrink-0 snap-center group">
-                <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:border-[#DC2626] group-hover:scale-110 shadow-xl group-hover:shadow-[#DC2626]/20">
-                  <cat.icon size={32} className="text-[#DC2626]" />
-                </div>
-                <span className="text-[10px] sm:text-xs font-black uppercase text-[#0F172A] transition-colors group-hover:text-[#DC2626]">
-                  {cat.label[lang]}
-                </span>
-              </Link>
-            ))}
+      {/* 3. CATEGORIES SECTION - Highlighted with Title */}
+<section className="py-16 mt-4 sm:mt-10 bg-slate-50/50"> 
+  <div className="container mx-auto px-4">
+    {/* ✅ Section Title Added */}
+    <div className="flex flex-col items-center mb-10 text-center">
+      <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] uppercase tracking-tighter">
+        {lang === 'en' ? 'Explore Our Categories' : 'استكشف أقسامنا'}
+      </h2>
+      <div className="h-1 w-12 bg-[#DC2626] rounded-full mt-2"></div>
+    </div>
+
+    <div className="flex overflow-x-auto gap-6 sm:gap-12 pb-6 no-scrollbar snap-x justify-start sm:justify-center">
+      {categories.map((cat) => (
+        <Link 
+          key={cat.id} 
+          to={cat.path} 
+          className="flex flex-col items-center gap-4 shrink-0 snap-center group transition-transform hover:-translate-y-1"
+        >
+          {/* Enhanced Circular Icon with glow on hover */}
+          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:border-[#DC2626] group-hover:scale-110 shadow-lg group-hover:shadow-[#DC2626]/20 relative overflow-hidden">
+            {/* Subtle background glow for highlight */}
+            <div className="absolute inset-0 bg-[#DC2626] opacity-0 group-hover:opacity-5 transition-opacity duration-500"></div>
+            
+            <cat.icon 
+              size={32} 
+              className="text-[#DC2626] transition-transform duration-500 group-hover:rotate-6" 
+            />
           </div>
-        </div>
-      </section>
+          
+          <span className="text-[10px] sm:text-xs font-black uppercase text-[#0F172A] tracking-tighter transition-colors group-hover:text-[#DC2626]">
+            {cat.label[lang]}
+          </span>
+        </Link>
+      ))}
+    </div>
+  </div>
+</section>
 
       <div className="container mx-auto px-4 space-y-24 mt-16">
         {/* 4. MARYLAND SHOWCASE */}
@@ -183,8 +208,8 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 5. BEST SELLERS */}
-        <section className="space-y-10">
+        {/* 5. BEST SELLERS - Targeted for Scroll */}
+        <section ref={bestSellersRef} className="space-y-10 pb-10 scroll-mt-32">
           <div className="flex items-center gap-4 px-2">
             <Sparkles className="text-[#DC2626]" size={28} />
             <h2 className="text-3xl sm:text-4xl font-black text-[#0F172A] uppercase tracking-tighter">
@@ -204,7 +229,7 @@ const Home = () => {
                 <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">
                     {lang === 'en' ? "Our Commitment" : "التزامنا"}
                 </p>
-                <p className="text-slate-500 text-xs italic px-6">
+                <p className="text-slate-500 text-xs italic">
                     {lang === 'en' 
                         ? "Quality medicine and a lifetime of professional care."
                         : "دواء عالي الجودة ورعاية مهنية تدوم مدى الحياة."}
