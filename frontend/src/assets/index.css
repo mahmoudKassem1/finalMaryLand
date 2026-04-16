@@ -13,3 +13,14 @@
   background: #0d9488;
   border-radius: 10px;
 }
+
+/* Add this to your index.css */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}

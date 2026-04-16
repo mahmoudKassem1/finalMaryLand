@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingCart, User, Globe, LayoutDashboard, Menu, X, Home as HomeIcon,
   Sparkles, HeartPulse, Baby, Stethoscope, Pill, Apple, ChevronDown, LogOut, LogIn,
-  MessageCircle, Search, Package, Star, UserCog // ✅ Added UserCog Icon
+  MessageCircle, Search, Package, Star, UserCog 
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import Logo from '../ui/Logo';
-
-// Context Imports
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
@@ -18,16 +16,26 @@ const Header = () => {
   const { user, logout } = useAuth(); 
   const { cartItems } = useCart();
   
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   
+  const userDropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const translations = t || {};
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -35,7 +43,7 @@ const Header = () => {
         const currentScrollY = window.scrollY;
         if (currentScrollY > lastScrollY && currentScrollY > 100) {
           setShowHeader(false); 
-          setIsCatDropdownOpen(false); 
+          setIsUserDropdownOpen(false);
         } else {
           setShowHeader(true); 
         }
@@ -48,7 +56,7 @@ const Header = () => {
 
   const handleLogout = () => {
     logout();
-    setIsMenuOpen(false);
+    setIsUserDropdownOpen(false);
     navigate('/');
   };
 
@@ -56,7 +64,7 @@ const Header = () => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${searchQuery}`);
-      setIsMenuOpen(false);
+      setIsSideMenuOpen(false);
     }
   };
 
@@ -76,8 +84,6 @@ const Header = () => {
     },
   ];
 
-  const currentCat = categories.find(c => c.path === location.pathname) || categories[0];
-
   return (
     <>
       <header 
@@ -86,219 +92,164 @@ const Header = () => {
         }`} 
         dir={lang === 'ar' ? 'rtl' : 'ltr'}
       >
-        <div className="container mx-auto space-y-2 sm:space-y-3 pointer-events-auto">
-          
-          {/* TOP BAR */}
-          <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl sm:rounded-3xl px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between shadow-xl gap-2 sm:gap-4">
+        <div className="container mx-auto pointer-events-auto">
+          {/* Main Wrapper: flex-nowrap prevents vertical stacking, items-stretch ensures vertical alignment */}
+          <div className="bg-white/90 backdrop-blur-xl border border-white/40 rounded-2xl sm:rounded-3xl px-2 sm:px-6 py-2 sm:py-3 flex items-center justify-between shadow-xl gap-1 sm:gap-4">
             
-            <div className="flex items-center gap-3 sm:gap-4 group shrink-0 cursor-pointer" onClick={() => navigate('/')}>
-              {/* Logo Upgrade: Bigger, Shadow, Hover Effect */}
-              <div className="relative transition-transform duration-300 group-hover:scale-110 drop-shadow-md">
-                 <Logo size="h-10 sm:h-12 md:h-14" showText={false} />
-              </div>
-              
-              <div className="flex flex-col leading-none">
-                <span className="text-[#0F172A] font-black text-sm sm:text-lg md:text-2xl uppercase tracking-tighter transition-colors group-hover:text-[#DC2626]">
-                  Maryland
-                </span>
-                <span className="text-[#DC2626] font-black text-[10px] sm:text-xs md:text-sm uppercase tracking-[0.25em] mt-0.5">
-                  Pharmacy
-                </span>
+            {/* LEFT: MENU & LOGO - Shrink-0 keeps the logo size stable */}
+            <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+              <button 
+                onClick={() => setIsSideMenuOpen(true)} 
+                className="p-1.5 sm:p-2.5 hover:bg-slate-100 rounded-xl transition-colors group"
+              >
+                <Menu size={24} className="text-[#0F172A] group-hover:text-[#DC2626]" />
+              </button>
+
+              <div className="flex items-center gap-1.5 cursor-pointer group" onClick={() => navigate('/')}>
+                <div className="relative transition-transform duration-300 group-hover:scale-105 shrink-0">
+                   <Logo size="h-10 sm:h-14" showText={false} />
+                </div>
+                <div className="hidden lg:flex flex-col leading-none">
+                  <span className="text-[#0F172A] font-black text-sm md:text-lg uppercase tracking-tighter">Maryland</span>
+                  <span className="text-[#DC2626] font-black text-[10px] uppercase tracking-[0.2em]">Pharmacy</span>
+                </div>
               </div>
             </div>
 
-            {/* SEARCH BAR (Desktop) */}
-            <form onSubmit={handleSearch} className="hidden md:block flex-1 max-w-lg mx-4 group relative">
-              <div className="relative">
+            {/* CENTER: SEARCH - Improved flex-grow and min-width to prevent squeezing */}
+            <form onSubmit={handleSearch} className="flex-grow max-w-xl mx-2 sm:mx-6 group relative">
+              <div className="relative w-full">
                 <input 
                   type="text" 
-                  placeholder={lang === 'en' ? "Search for medicines..." : "ابحث عن الأدوية..."}
-                  className="w-full bg-slate-50/50 border border-slate-200 rounded-2xl py-2.5 pl-11 pr-4 text-sm font-medium 
-                              focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:border-[#DC2626] 
-                              focus:bg-white transition-all shadow-inner placeholder:text-slate-400"
+                  placeholder={lang === 'en' ? "Search..." : "ابحث..."}
+                  className="w-full bg-slate-100/50 border border-slate-200/50 rounded-xl py-2 sm:py-2.5 pl-9 sm:pl-10 pr-4 text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-[#DC2626] focus:border-transparent transition-all outline-none"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#DC2626] transition-colors" />
+                <Search size={16} className={`absolute ${lang === 'ar' ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#DC2626]`} />
               </div>
             </form>
 
-            {/* ICONS */}
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {!user && (
-                <Link to="/login" className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-[#0F172A] font-bold text-xs hover:bg-[#DC2626] hover:text-white transition-all">
-                  <LogIn size={16} />
-                  <span>{translations.login || 'Login'}</span>
-                </Link>
-              )}
+            {/* RIGHT: ACTIONS - Shrink-0 keeps buttons from collapsing */}
+            <div className="flex items-center gap-0.5 sm:gap-2 shrink-0 relative" ref={userDropdownRef}>
+              
+              <button 
+                onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+                className="hidden md:flex p-2.5 rounded-xl hover:bg-slate-100 text-[#0F172A] transition-colors"
+              >
+                <Globe size={20} />
+              </button>
 
-              <Link to="/cart" className="p-2 sm:p-2.5 rounded-xl hover:bg-red-50 hover:text-[#DC2626] transition-colors relative">
-                <ShoppingCart size={24} className="text-[#0F172A]" />
+              <Link to="/cart" className="p-2 sm:p-2.5 rounded-xl hover:bg-red-50 text-[#0F172A] transition-colors relative">
+                <ShoppingCart size={22} className="sm:w-[24px] sm:h-[24px]" />
                 {cartItems?.length > 0 && (
-                  <span className="absolute top-0 right-0 bg-[#DC2626] text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
+                  <span className="absolute top-1 right-1 bg-[#DC2626] text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
                     {cartItems.length}
                   </span>
                 )}
               </Link>
-              
-              <button onClick={() => setIsMenuOpen(true)} className="p-2 sm:p-2.5 hover:bg-red-50 hover:text-[#DC2626] transition-colors rounded-xl">
-                <Menu size={28} className="text-[#0F172A]" />
+
+              <button 
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className={`p-2 sm:p-2.5 rounded-xl transition-all ${isUserDropdownOpen ? 'bg-[#DC2626] text-white' : 'hover:bg-slate-100 text-[#0F172A]'}`}
+              >
+                <User size={22} className="sm:w-[24px] sm:h-[24px]" />
               </button>
-            </div>
-          </div>
 
-          {/* DESKTOP NAV (Standard Centered Layout) */}
-          <div className="relative hidden md:block">
-            <div className="bg-[#0F172A]/95 backdrop-blur-lg border border-white/10 rounded-2xl shadow-2xl">
-              <nav className="flex items-center justify-center flex-nowrap gap-1 lg:gap-4 px-2 py-2.5">
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    to={cat.path}
-                    className={`flex items-center gap-2 px-2 lg:px-4 py-2 rounded-xl text-[10px] lg:text-xs font-black transition-all duration-300 whitespace-nowrap shrink-0 ${
-                      location.pathname === cat.path 
-                      ? 'bg-[#DC2626] text-white shadow-lg' 
-                      : 'text-slate-300 hover:text-[#DC2626] hover:bg-red-500/10'
-                    }`}
-                  >
-                    <cat.icon size={16} className="shrink-0 lg:w-[18px] lg:h-[18px]" />
-                    <span className={lang === 'ar' ? 'font-arabic' : ''}>{cat.label}</span>
-                  </Link>
-                ))}
-              </nav>
-            </div>
-          </div>
-          
-          {/* MOBILE NAV DROPDOWN (Category Selector) */}
-          <div className="md:hidden relative">
-            <button 
-              onClick={() => setIsCatDropdownOpen(!isCatDropdownOpen)}
-              className="w-full bg-[#0F172A]/95 backdrop-blur-lg border border-white/10 rounded-xl px-4 py-3 flex items-center justify-between text-white shadow-2xl"
-            >
-              <div className="flex items-center gap-3">
-                <currentCat.icon size={20} className="text-[#DC2626]" />
-                <span className={`text-xs font-black tracking-widest uppercase ${lang === 'ar' ? 'font-arabic' : ''}`}>
-                  {currentCat.label}
-                </span>
-              </div>
-              <ChevronDown size={20} className={`transition-transform duration-300 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
+              {/* USER DROPDOWN MENU */}
+              {isUserDropdownOpen && (
+                <div className={`absolute top-full mt-4 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[60] animate-in fade-in slide-in-from-top-2 duration-200 ${lang === 'ar' ? 'left-0' : 'right-0'}`}>
+                  <div className="p-4 bg-slate-50 border-b border-slate-100">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{translations.welcome || 'Welcome'}</p>
+                    <p className="text-sm font-bold text-[#0F172A] truncate">{user?.name || translations.guest || 'Guest User'}</p>
+                  </div>
+                  
+                  <div className="p-2 flex flex-col gap-1">
+                    {user ? (
+                      <>
+                        <Link to="/profile" onClick={() => setIsUserDropdownOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-700">
+                          <UserCog size={18} className="text-[#DC2626]" /> {lang === 'en' ? 'My Profile' : 'الملف الشخصي'}
+                        </Link>
+                        <Link to="/my-orders" onClick={() => setIsUserDropdownOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-700">
+                          <Package size={18} className="text-[#DC2626]" /> {lang === 'en' ? 'My Orders' : 'طلباتي'}
+                        </Link>
+                        {user.role === 'admin' && (
+                          <Link to="/management-panel" onClick={() => setIsUserDropdownOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0F172A] text-white text-sm font-bold">
+                            <LayoutDashboard size={18} className="text-[#DC2626]" /> Management
+                          </Link>
+                        )}
+                        <hr className="my-1 border-slate-100" />
+                      </>
+                    ) : (
+                      <Link to="/login" onClick={() => setIsUserDropdownOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 text-sm font-bold text-[#DC2626]">
+                        <LogIn size={18} /> {translations.login || 'Sign In'}
+                      </Link>
+                    )}
 
-            <div className={`absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300 origin-top z-[60] ${
-              isCatDropdownOpen ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0 pointer-events-none'
-            }`}>
-              <div className="p-2 grid grid-cols-1 gap-1 max-h-[60vh] overflow-y-auto">
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    to={cat.path}
-                    onClick={() => setIsCatDropdownOpen(false)}
-                    className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
-                      location.pathname === cat.path 
-                      ? 'bg-red-50 text-[#DC2626]' 
-                      : 'text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <cat.icon size={18} className={location.pathname === cat.path ? 'text-[#DC2626]' : 'text-slate-400'} />
-                    <span className={`text-sm font-bold ${lang === 'ar' ? 'font-arabic' : ''}`}>{cat.label}</span>
-                  </Link>
-                ))}
-              </div>
+                    <Link to="/contact" onClick={() => setIsUserDropdownOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-700">
+                      <MessageCircle size={18} className="text-[#DC2626]" /> {lang === 'en' ? 'Contact Us' : 'تواصل معنا'}
+                    </Link>
+
+                    <button onClick={() => { setLang(lang === 'en' ? 'ar' : 'en'); setIsUserDropdownOpen(false); }} className="md:hidden flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-700">
+                      <Globe size={18} className="text-[#DC2626]" /> {lang === 'en' ? 'العربية' : 'English'}
+                    </button>
+
+                    {user && (
+                      <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 text-sm font-bold text-[#DC2626] text-left">
+                        <LogOut size={18} /> {translations.logout || 'Logout'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      {/* MOBILE DRAWER (Main Menu) */}
+      {/* CATEGORY SIDE DRAWER */}
       <div 
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity duration-300 ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={() => setIsMenuOpen(false)}
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity duration-300 ${isSideMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setIsSideMenuOpen(false)}
       />
       <aside 
         dir={lang === 'ar' ? 'rtl' : 'ltr'}
-        className={`fixed top-0 bottom-0 w-[300px] bg-white z-[110] shadow-2xl transition-transform duration-500 flex flex-col
+        className={`fixed top-0 bottom-0 w-[280px] sm:w-[320px] bg-white z-[110] shadow-2xl transition-transform duration-500 flex flex-col
         ${lang === 'ar' ? 'right-0' : 'left-0'} 
-        ${isMenuOpen ? 'translate-x-0' : (lang === 'ar' ? 'translate-x-full' : '-translate-x-full')}`}
+        ${isSideMenuOpen ? 'translate-x-0' : (lang === 'ar' ? 'translate-x-full' : '-translate-x-full')}`}
       >
-        <div className="p-6 flex justify-between items-center border-b border-slate-100">
-          <span className="font-black text-[#0F172A] tracking-tighter text-xl uppercase">{translations.menu || 'Menu'}</span>
-          <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-red-50 rounded-full text-[#DC2626]"><X size={24} /></button>
+        <div className="p-6 flex justify-between items-center border-b border-slate-100 bg-slate-50/50">
+          <div className="flex flex-col">
+            <span className="font-black text-[#0F172A] text-xl uppercase leading-none">Categories</span>
+            <span className="text-[10px] text-[#DC2626] font-bold tracking-[0.2em] mt-1 uppercase">Shop by Department</span>
+          </div>
+          <button onClick={() => setIsSideMenuOpen(false)} className="p-2 hover:bg-red-50 rounded-full text-[#DC2626] transition-colors"><X size={24} /></button>
         </div>
         
-        <nav className="p-6 flex flex-col gap-4 overflow-y-auto h-full">
-            <form onSubmit={handleSearch} className="md:hidden relative mb-2 group">
-                <input 
-                    type="text" 
-                    placeholder={lang === 'en' ? "Search..." : "بحث..."}
-                    className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-bold 
-                               focus:outline-none focus:ring-[#DC2626] focus:border-[#DC2626] transition-all"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#DC2626]" />
-            </form>
-
-          <div className="flex items-center gap-4 p-4 mb-2 bg-slate-50 rounded-2xl border border-slate-100">
-            <div className="bg-[#DC2626] p-2 rounded-xl text-white">
-              <User size={24} />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 font-black uppercase tracking-widest">{translations.welcome || 'Welcome'}</p>
-              <p className="text-sm font-bold text-[#0F172A]">{user?.name || translations.guest || 'Guest User'}</p>
-            </div>
-          </div>
-
-          <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 font-bold text-[#0F172A]">
-            <HomeIcon size={22} className="text-[#DC2626]" /> {translations.home || 'Home'}
-          </Link>
-          
-          {user && (
-            <>
-              {/* My Orders Link */}
-              <Link to="/my-orders" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 font-bold text-[#0F172A]">
-                  <Package size={22} className="text-[#DC2626]" /> {lang === 'en' ? 'My Orders' : 'طلباتي'}
-              </Link>
-
-              {/* ✅ NEW: My Profile Link */}
-              <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 font-bold text-[#0F172A]">
-                  <UserCog size={22} className="text-[#DC2626]" /> {lang === 'en' ? 'My Profile' : 'الملف الشخصي'}
-              </Link>
-            </>
-          )}
-
-          <Link to="/contact" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 font-bold text-[#0F172A]">
-            <MessageCircle size={22} className="text-[#DC2626]" /> {lang === 'en' ? 'Contact Us' : 'تواصل معنا'}
-          </Link>
-          
-          <button onClick={() => { setLang(lang === 'en' ? 'ar' : 'en'); setIsMenuOpen(false); }} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 font-bold text-[#0F172A]">
-            <Globe size={22} className="text-[#DC2626]" /> {lang === 'en' ? 'العربية' : 'English'}
-          </button>
-
-          {user?.role === 'admin' && (
-            <Link to="/management-panel" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl bg-[#0F172A] text-white font-bold mt-4 shadow-lg">
-              <LayoutDashboard size={22} className="text-[#DC2626]" /> Management
+        <nav className="p-4 flex flex-col gap-1 overflow-y-auto">
+          {categories.map((cat) => (
+            <Link
+              key={cat.id}
+              to={cat.path}
+              onClick={() => setIsSideMenuOpen(false)}
+              className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all font-bold ${
+                location.pathname === cat.path 
+                ? 'bg-[#DC2626] text-white shadow-lg shadow-red-200' 
+                : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <cat.icon size={22} className={location.pathname === cat.path ? 'text-white' : 'text-[#DC2626]'} />
+              <span className={lang === 'ar' ? 'font-arabic text-lg' : 'text-sm'}>{cat.label}</span>
             </Link>
-          )}
-
-          <div className="mt-auto pt-6 border-t border-slate-100">
-            {user ? (
-              <button 
-                onClick={handleLogout}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-red-50 text-[#DC2626] font-bold hover:bg-red-100 transition-all"
-              >
-                <LogOut size={22} /> {translations.logout || 'Logout'}
-              </button>
-            ) : (
-              <Link 
-                to="/login" 
-                onClick={() => setIsMenuOpen(false)}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-100 text-[#0F172A] font-bold hover:bg-slate-200 transition-all"
-              >
-                <LogIn size={22} /> {translations.login || 'Sign In'}
-              </Link>
-            )}
-          </div>
+          ))}
         </nav>
+
+        <div className="mt-auto p-6 bg-slate-50 border-t border-slate-100">
+           <div className="flex items-center gap-3 text-[#0F172A]">
+              <div className="bg-white p-2 rounded-xl shadow-sm"><Logo size="h-6" showText={false} /></div>
+              <p className="text-xs font-black uppercase tracking-widest">Maryland Pharmacy</p>
+           </div>
+        </div>
       </aside>
     </>
   );

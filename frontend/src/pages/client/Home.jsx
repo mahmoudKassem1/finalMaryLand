@@ -1,203 +1,238 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ShoppingCart, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { 
+  ShoppingCart, AlertCircle, Loader2, ChevronRight, 
+  ShieldCheck, Truck, Clock, Award, Sparkles,
+  HeartPulse, Baby, Stethoscope, Pill, Apple, Star, Home as HomeIcon
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 import { useApp } from '../../context/AppContext';
 import { useCart } from '../../context/CartContext';
-import api from '../../utils/axios'; // Import backend bridge
+import api from '../../utils/axios';
 
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
 
+// Assets
+import HeroImg from '../../assets/hero.jpeg';
+import SignatureImg from '../../assets/sig.png';
+
 const Home = () => {
-  const { t, lang } = useApp();
+  const { lang, t } = useApp();
   const { addToCart } = useCart();
   const navigate = useNavigate();
-  const { categoryName } = useParams();
 
-  // 1. State for Data & UI
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // --- NEW: PAGINATION STATE ---
-  const [visibleCount, setVisibleCount] = useState(6);
-  const PRODUCTS_PER_PAGE = 6;
-
-  // 2. Fetch Products from Backend
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Fetch ALL products from backend
         const { data } = await api.get('/products');
-        // Handle both formats: { products: [...] } OR [...]
-        setProducts(data.products || data); 
+        setProducts(data.products || data);
       } catch (err) {
-        console.error("Failed to fetch products:", err);
-        setError("Failed to load products. Please try again.");
+        setError(lang === 'en' ? "Failed to load products." : "فشل تحميل المنتجات.");
+        console.error("Error fetching products:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchProducts();
-  }, []); // Runs once on mount
+  }, [lang]);
 
-  // --- NEW: Reset pagination when category changes ---
-  useEffect(() => {
-    setVisibleCount(PRODUCTS_PER_PAGE);
-  }, [categoryName]);
+  const categories = useMemo(() => [
+    { id: 'home', label: { en: 'Home', ar: 'الرئيسية' }, icon: HomeIcon, path: '/' },
+    { id: 'beauty', label: { en: 'Beauty', ar: 'الجمال' }, icon: Sparkles, path: '/category/beauty' },
+    { id: 'personal', label: { en: 'Personal Care', ar: 'العناية الشخصية' }, icon: HeartPulse, path: '/category/personal-care' },
+    { id: 'baby', label: { en: 'Mom & Baby', ar: 'الأم والطفل' }, icon: Baby, path: '/category/mom-and-baby' },
+    { id: 'health', label: { en: 'Health Care', ar: 'الرعاية الصحية' }, icon: Stethoscope, path: '/category/health-care' },
+    { id: 'meds', label: { en: 'Medication', ar: 'الأدوية' }, icon: Pill, path: '/category/medication' },
+    { id: 'vitamins', label: { en: 'Vitamins', ar: 'الفيتامينات' }, icon: Apple, path: '/category/vitamins' },
+    { id: 'maryland', label: { en: 'Maryland', ar: 'ماريلاند' }, icon: Star, path: '/category/maryland-products' },
+  ], []);
 
-  // 3. Filter & Sort Logic (Client Side)
-  // Logic: If 'categoryName' exists in URL (e.g., /category/beauty), filter by it.
-  // Otherwise, show all.
-  const filteredProducts = products
-    .filter(p => !categoryName || p.category === categoryName)
-    .sort((a) => (a.isMaryland ? -1 : 1)); // Show Maryland products first
+  const randomBestSellers = useMemo(() => {
+    return [...products].sort(() => 0.5 - Math.random()).slice(0, 8);
+  }, [products]);
 
-  // --- NEW: Sliced products for pagination ---
-  const visibleProducts = filteredProducts.slice(0, visibleCount);
+  const marylandProducts = useMemo(() => products.filter(p => p.isMaryland), [products]);
 
-  const handleLoadMore = () => {
-    setVisibleCount(prev => prev + PRODUCTS_PER_PAGE);
-  };
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
+      <Loader2 size={40} className="animate-spin mb-4 text-[#DC2626]" />
+      <p className="font-bold tracking-widest uppercase text-sm">Vitalizing Home...</p>
+    </div>
+  );
 
-  // 4. Loading State UI
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] text-slate-400">
-        <Loader2 size={40} className="animate-spin mb-4 text-[#DC2626]" />
-        <p className="font-bold tracking-widest uppercase text-sm">Loading Products...</p>
-      </div>
-    );
-  }
-
-  // 5. Error State UI
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] text-red-500">
-        <AlertCircle size={40} className="mb-4" />
-        <p className="font-bold">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-4 text-slate-600 underline text-sm"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
+  if (error) return (
+    <div className="flex flex-col items-center justify-center min-h-[40vh] text-red-500">
+      <AlertCircle size={40} className="mb-4" />
+      <p className="font-bold">{error}</p>
+      <SquircleButton variant="secondary" className="mt-4" onClick={() => window.location.reload()}>Try Again</SquircleButton>
+    </div>
+  );
 
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-4xl font-black text-[#0F172A] uppercase tracking-tight">
-            {!categoryName ? (lang === 'en' ? "Maryland Exclusive" : "حصري ماريلاند") : (t[`cat_${categoryName}`] || categoryName)}
-          </h1>
-          <p className="text-[#DC2626] font-bold text-sm mt-1">
-            {lang === 'en' ? "Trusted Pharmaceutical Solutions" : "حلول صيدلانية موثوقة"}
-          </p>
-        </div>
-      </div>
+    <div className="pb-8 -mt-[90px] overflow-x-hidden bg-[#f8fafc]"> 
       
-      {/* Empty State (If no products match filter) */}
-      {filteredProducts.length === 0 ? (
-        <div className="p-10 text-center text-slate-400 font-bold bg-white/50 rounded-3xl border border-white/60">
-          {lang === 'en' ? "No products found in this category." : "لا توجد منتجات في هذا القسم."}
-        </div>
-      ) : (
-        <>
-          {/* Products Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {visibleProducts.map((product) => (
-              <div 
-                key={product._id} // MongoDB uses _id
-                onClick={() => {
-                  navigate(`/category/${product.category}/${product._id}`);
-                }}
-                className="h-full cursor-pointer group"
-              >
-                <GlassCard 
-                  className="p-6 flex flex-col justify-between h-full transition-all duration-300 hover:border-[#DC2626]/50 hover:shadow-xl hover:shadow-red-500/5"
-                >
-                  {/* Top Content: Non-interactive */}
-                  <div className="pointer-events-none">
-                    {/* Image / Placeholder Area */}
-                    <div className="bg-slate-100 rounded-3xl h-48 mb-4 flex items-center justify-center relative overflow-hidden transition-transform duration-500 group-hover:scale-[1.02]">
-                      
-                      {/* If product has imageURL OR image, show it. Else show Placeholder */}
-                      {(product.imageURL || product.image) ? (
-                        <img 
-                          src={product.imageURL || product.image} 
-                          alt={product.title} 
-                          className="w-full h-full object-contain p-4 mix-blend-multiply"
-                        />
-                      ) : (
-                        <div className="text-[#DC2626] font-black opacity-20 text-4xl select-none">
-                          {product.category?.substring(0,2).toUpperCase()}
-                        </div>
-                      )}
-
-                      {/* Maryland Badge */}
-                      {product.isMaryland && (
-                        <span className="absolute top-4 left-4 bg-[#DC2626] text-white text-[10px] px-3 py-1 rounded-full font-black tracking-widest animate-pulse shadow-lg shadow-red-500/20">
-                          MARYLAND BRAND
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Title */}
-                    <h3 className="text-xl font-black mb-1 text-[#0F172A] line-clamp-2">
-                      {product.title}
-                    </h3>
-                    
-                    {/* Price */}
-                    <p className="text-[#DC2626] font-mono font-black text-lg mb-6">
-                      {product.price} <small className="text-[10px]">{lang === 'en' ? 'EGP' : 'ج.م'}</small>
-                    </p>
-                  </div>
-
-                  {/* Action Area */}
-                  <div className="mt-auto" onClick={(e) => e.stopPropagation()}>
+      {/* 1. HERO SECTION */}
+      <section className="relative w-full overflow-hidden bg-[#0F172A] z-0">
+        <div className="relative w-full h-auto sm:h-[700px]">
+          <img 
+            src={HeroImg} 
+            alt="Pharmacy" 
+            className="w-full h-auto sm:h-full object-contain sm:object-cover block" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-black/80 via-black/40 to-transparent flex items-center">
+            <div className="container mx-auto px-6 sm:px-12 text-white pt-[80px] sm:pt-[112px]">
+              <div className="max-w-2xl space-y-4 sm:space-y-6">
+                <h1 className="text-3xl sm:text-7xl font-black uppercase leading-[0.9] drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                  {lang === 'en' ? "Trusted" : "رعاية"} <br />
+                  <span className="text-[#DC2626] drop-shadow-[0_0_30px_rgba(220,38,38,0.7)]">
+                    {lang === 'en' ? "Care" : "موثوقة"}
+                  </span>
+                </h1>
+                <div className="relative group w-fit pt-2">
+                    <div className="absolute -inset-1 bg-[#DC2626] rounded-xl blur-xl opacity-50 group-hover:opacity-100 transition duration-500"></div>
                     <SquircleButton 
                       variant="primary" 
-                      fullWidth 
-                      icon={ShoppingCart}
-                      onClick={(e) => {
-                        e.stopPropagation(); 
-                        addToCart(product);
-                        // Added Toast for better UX
-                        toast.success(lang === 'en' ? 'Added to cart' : 'تم الإضافة للسلة');
-                      }}
+                      className="relative !py-3 sm:!py-5 !px-8 sm:!px-12 text-sm sm:text-lg"
+                      onClick={() => navigate('/category/medication')}
                     >
-                      {t.cart || (lang === 'en' ? "Add to Cart" : "أضف للسلة")}
+                      {lang === 'en' ? "Shop Now" : "تسوق الآن"}
                     </SquircleButton>
-                  </div>
-                </GlassCard>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. TRUST BAR */}
+      <section className="bg-white border-y border-slate-100 py-8 relative z-10">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { icon: Truck, t: { en: "Fast Delivery", ar: "توصيل سريع" }, d: { en: "Under 24h", ar: "خلال ٢٤ ساعة" } },
+              { icon: ShieldCheck, t: { en: "100% Original", ar: "أصلي ١٠٠٪" }, d: { en: "Certified", ar: "منتجات معتمدة" } },
+              { icon: Clock, t: { en: "Support 24/7", ar: "دعم متواصل" }, d: { en: "Professional", ar: "صيادلة متخصصون" } },
+              { icon: Award, t: { en: "Best Prices", ar: "أفضل الأسعار" }, d: { en: "Top Deals", ar: "عروض يومية" } },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-4 sm:justify-center">
+                <item.icon className="text-[#DC2626] shrink-0" size={32} />
+                <div className="flex flex-col leading-none">
+                  <span className="font-black text-sm text-[#0F172A] uppercase tracking-tight">{item.t[lang]}</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">{item.d[lang]}</span>
+                </div>
               </div>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* --- NEW: LOAD MORE BUTTON --- */}
-          {visibleCount < filteredProducts.length && (
-            <div className="text-center mt-12">
-              <SquircleButton
-                variant="secondary"
-                onClick={handleLoadMore}
-                className="!px-12 !py-4 text-sm font-bold"
-              >
-                {t.load_more || (lang === 'en' ? 'Load More' : 'تحميل المزيد')}
-              </SquircleButton>
+      {/* 3. CATEGORIES SCROLLER */}
+      <section className="py-16 mt-4 sm:mt-10 bg-slate-50/50"> 
+        <div className="container mx-auto px-4">
+          <div className="flex overflow-x-auto gap-6 sm:gap-12 pb-6 no-scrollbar snap-x justify-start sm:justify-center">
+            {categories.map((cat) => (
+              <Link key={cat.id} to={cat.path} className="flex flex-col items-center gap-4 shrink-0 snap-center group">
+                <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:border-[#DC2626] group-hover:scale-110 shadow-xl group-hover:shadow-[#DC2626]/20">
+                  <cat.icon size={32} className="text-[#DC2626]" />
+                </div>
+                <span className="text-[10px] sm:text-xs font-black uppercase text-[#0F172A] transition-colors group-hover:text-[#DC2626]">
+                  {cat.label[lang]}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="container mx-auto px-4 space-y-24 mt-16">
+        {/* 4. MARYLAND SHOWCASE */}
+        <section className="space-y-8">
+          <div className="flex items-end justify-between px-2">
+            <h2 className="text-3xl sm:text-4xl font-black text-[#0F172A] uppercase tracking-tighter">
+                {lang === 'en' ? 'Maryland Exclusive' : 'حصري ماريلاند'}
+            </h2>
+            <Link to="/category/maryland-products" className="text-[#DC2626] font-bold text-sm underline flex items-center gap-1 group">
+               {lang === 'en' ? 'View All' : 'عرض الكل'} 
+               <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+          <div className="flex overflow-x-auto gap-6 pb-8 no-scrollbar snap-x">
+            {marylandProducts.map((product) => (
+              <div key={product._id} className="min-w-[260px] sm:min-w-[320px] snap-start">
+                <ProductCard product={product} addToCart={addToCart} navigate={navigate} lang={lang} t={t} />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 5. BEST SELLERS */}
+        <section className="space-y-10">
+          <div className="flex items-center gap-4 px-2">
+            <Sparkles className="text-[#DC2626]" size={28} />
+            <h2 className="text-3xl sm:text-4xl font-black text-[#0F172A] uppercase tracking-tighter">
+              {lang === 'en' ? 'Best Sellers' : 'الأكثر مبيعاً'}
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8">
+            {randomBestSellers.map((product) => (
+              <ProductCard key={product._id} product={product} addToCart={addToCart} navigate={navigate} lang={lang} t={t} />
+            ))}
+          </div>
+        </section>
+
+        {/* 6. COMPACT SIGNATURE SECTION */}
+        <section className="flex flex-col items-center justify-center py-8 border-t border-slate-100">
+            <div className="max-w-md text-center space-y-2">
+                <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">
+                    {lang === 'en' ? "Our Commitment" : "التزامنا"}
+                </p>
+                <p className="text-slate-500 text-xs italic">
+                    {lang === 'en' 
+                        ? "Quality medicine and a lifetime of professional care."
+                        : "دواء عالي الجودة ورعاية مهنية تدوم مدى الحياة."}
+                </p>
+                <div className="pt-2">
+                    <img 
+                        src={SignatureImg} 
+                        alt="Signature" 
+                        className="h-20 sm:h-28 mx-auto object-contain brightness-0 opacity-80" 
+                    />
+                </div>
             </div>
-          )}
-        </>
-      )}
+        </section>
+      </div>
     </div>
   );
 };
+
+const ProductCard = ({ product, addToCart, navigate, lang, t }) => (
+  <div onClick={() => navigate(`/category/${product.category}/${product._id}`)} className="cursor-pointer group h-full">
+    <GlassCard className="p-4 sm:p-5 flex flex-col justify-between h-full transition-all duration-300 hover:shadow-2xl border-slate-100 relative overflow-hidden bg-white">
+      <div>
+        <div className="relative h-44 sm:h-56 bg-white rounded-2xl mb-4 flex items-center justify-center border border-slate-50 overflow-hidden">
+          <img src={product.imageURL || product.image} alt={product.title} className="w-full h-full object-contain p-4 transition-transform duration-700 group-hover:scale-110" />
+          {product.isMaryland && <div className="absolute top-3 left-3 bg-[#DC2626] text-white text-[9px] px-3 py-1 rounded-full font-black tracking-widest shadow-lg">MARYLAND</div>}
+        </div>
+        <h3 className="text-xs sm:text-sm font-black mb-2 text-[#0F172A] line-clamp-2 uppercase group-hover:text-[#DC2626] transition-colors">{product.title}</h3>
+        <p className="text-[#DC2626] font-mono font-black text-sm sm:text-lg">{product.price} <span className="text-[10px] font-sans opacity-70">{lang === 'en' ? 'EGP' : 'ج.م'}</span></p>
+      </div>
+      <div className="mt-5" onClick={(e) => e.stopPropagation()}>
+        <SquircleButton variant="primary" fullWidth className="!py-3" onClick={(e) => { e.stopPropagation(); addToCart(product); toast.success(lang === 'en' ? 'Added to cart' : 'تم الإضافة للسلة'); }}>
+          <div className="flex items-center justify-center gap-2">
+            <ShoppingCart size={18} />
+            <span className="uppercase text-[10px] font-bold">{t.cart || (lang === 'en' ? "Buy" : "شراء")}</span>
+          </div>
+        </SquircleButton>
+      </div>
+    </GlassCard>
+  </div>
+);
 
 export default Home;
