@@ -78,28 +78,39 @@ const Home = () => {
   return (
     <div className="pb-8 -mt-[90px] overflow-x-hidden bg-[#f8fafc]"> 
       
-      {/* 1. HERO SECTION */}
+      {/* 1. HERO SECTION - Enhanced Visibility on Mobile */}
       <section className="relative w-full overflow-hidden bg-[#0F172A] z-0">
-        <div className="relative w-full h-auto sm:h-[700px]">
+        {/* Set a min-height (min-h-[450px]) on mobile to prevent the squeezed look */}
+        <div className="relative w-full min-h-[450px] sm:h-[700px]">
           <img 
             src={HeroImg} 
             alt="Pharmacy" 
-            className="w-full h-auto sm:h-full object-contain sm:object-cover block" 
+            /* On mobile, use h-full + object-cover to ensure the area is filled beautifully */
+            className="absolute inset-0 w-full h-full object-cover sm:object-cover block" 
           />
-          <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-black/80 via-black/40 to-transparent flex items-center">
-            <div className="container mx-auto px-6 sm:px-12 text-white pt-[80px] sm:pt-[112px]">
-              <div className="max-w-2xl space-y-4 sm:space-y-6">
-                <h1 className="text-3xl sm:text-7xl font-black uppercase leading-[0.9] drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+          {/* Darker overlay for mobile to ensure CTA text pop */}
+          <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-black/80 via-black/40 sm:via-black/20 to-transparent flex items-center">
+            <div className="container mx-auto px-6 sm:px-12 text-white pt-[100px] sm:pt-[112px]">
+              <div className="max-w-2xl space-y-5 sm:space-y-6 text-center sm:text-left">
+                <h1 className="text-4xl sm:text-7xl font-black uppercase leading-[0.95] sm:leading-[0.9] drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
                   {lang === 'en' ? "Trusted" : "رعاية"} <br />
                   <span className="text-[#DC2626] drop-shadow-[0_0_30px_rgba(220,38,38,0.7)]">
                     {lang === 'en' ? "Care" : "موثوقة"}
                   </span>
                 </h1>
-                <div className="relative group w-fit pt-2">
+                
+                {/* Mobile-friendly description */}
+                <p className="text-slate-200 text-sm sm:text-lg font-medium max-w-sm mx-auto sm:mx-0">
+                  {lang === 'en' 
+                    ? "Premium pharmaceutical products and expert care at your fingertips." 
+                    : "منتجات صيدلانية متميزة ورعاية خبراء بين يديك."}
+                </p>
+
+                <div className="relative group w-fit mx-auto sm:mx-0 pt-2">
                     <div className="absolute -inset-1 bg-[#DC2626] rounded-xl blur-xl opacity-50 group-hover:opacity-100 transition duration-500"></div>
                     <SquircleButton 
                       variant="primary" 
-                      className="relative !py-3 sm:!py-5 !px-8 sm:!px-12 text-sm sm:text-lg"
+                      className="relative !py-4 sm:!py-5 !px-10 sm:!px-12 text-base sm:text-lg"
                       onClick={() => navigate('/category/medication')}
                     >
                       {lang === 'en' ? "Shop Now" : "تسوق الآن"}
@@ -187,13 +198,13 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 6. COMPACT SIGNATURE SECTION */}
+        {/* 6. SIGNATURE SECTION */}
         <section className="flex flex-col items-center justify-center py-8 border-t border-slate-100">
             <div className="max-w-md text-center space-y-2">
                 <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">
                     {lang === 'en' ? "Our Commitment" : "التزامنا"}
                 </p>
-                <p className="text-slate-500 text-xs italic">
+                <p className="text-slate-500 text-xs italic px-6">
                     {lang === 'en' 
                         ? "Quality medicine and a lifetime of professional care."
                         : "دواء عالي الجودة ورعاية مهنية تدوم مدى الحياة."}
@@ -220,7 +231,7 @@ const ProductCard = ({ product, addToCart, navigate, lang, t }) => (
           <img src={product.imageURL || product.image} alt={product.title} className="w-full h-full object-contain p-4 transition-transform duration-700 group-hover:scale-110" />
           {product.isMaryland && <div className="absolute top-3 left-3 bg-[#DC2626] text-white text-[9px] px-3 py-1 rounded-full font-black tracking-widest shadow-lg">MARYLAND</div>}
         </div>
-        <h3 className="text-xs sm:text-sm font-black mb-2 text-[#0F172A] line-clamp-2 uppercase group-hover:text-[#DC2626] transition-colors">{product.title}</h3>
+        <h3 className="text-xs sm:text-sm font-black mb-2 text-[#0F172A] line-clamp-2 uppercase group-hover:text-[#DC2626] transition-colors leading-tight">{product.title}</h3>
         <p className="text-[#DC2626] font-mono font-black text-sm sm:text-lg">{product.price} <span className="text-[10px] font-sans opacity-70">{lang === 'en' ? 'EGP' : 'ج.م'}</span></p>
       </div>
       <div className="mt-5" onClick={(e) => e.stopPropagation()}>
