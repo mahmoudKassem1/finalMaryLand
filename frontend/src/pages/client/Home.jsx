@@ -17,6 +17,7 @@ import SquircleButton from '../../components/ui/SquircleButton';
 // Assets
 import HeroImg from '../../assets/hero.jpeg';
 import SignatureImg from '../../assets/sig.png';
+import logo from '../../assets/logo.png';
 
 const Home = () => {
   const { lang, t } = useApp();
@@ -47,7 +48,7 @@ const Home = () => {
   }, [lang]);
 
   const categories = useMemo(() => [
-    { id: 'home', label: { en: 'Home', ar: 'الرئيسية' }, icon: HomeIcon, path: '/' },
+    
     { id: 'beauty', label: { en: 'Beauty', ar: 'الجمال' }, icon: Sparkles, path: '/category/beauty' },
     { id: 'personal', label: { en: 'Personal Care', ar: 'العناية الشخصية' }, icon: HeartPulse, path: '/category/personal-care' },
     { id: 'baby', label: { en: 'Mom & Baby', ar: 'الأم والطفل' }, icon: Baby, path: '/category/mom-and-baby' },
@@ -71,7 +72,7 @@ const Home = () => {
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
       <Loader2 size={40} className="animate-spin mb-4 text-[#DC2626]" />
-      <p className="font-bold tracking-widest uppercase text-sm">Vitalizing Home...</p>
+      <p className="font-bold tracking-widest uppercase text-sm">loading Home...</p>
     </div>
   );
 
@@ -86,73 +87,122 @@ const Home = () => {
   return (
     <div className="pb-8 -mt-[90px] overflow-x-hidden bg-[#f8fafc]"> 
       
-      {/* 1. HERO SECTION - Fixed Padding and Image Fit */}
-      <section className="relative w-full overflow-hidden bg-black z-0">
-        {/* Added aspect-video on mobile so the height matches the photo width automatically */}
-        <div className="relative w-full aspect-[4/3] sm:aspect-auto sm:h-[700px] flex items-center justify-center">
-          <img 
-            src={HeroImg} 
-            alt="Pharmacy" 
-            className="w-full h-full object-cover sm:object-cover block" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-b sm:bg-gradient-to-r from-black/70 via-black/20 to-transparent flex items-center">
-            <div className="container mx-auto px-6 sm:px-12 text-white pt-[60px] sm:pt-[112px]">
-              <div className="max-w-2xl space-y-3 sm:space-y-6">
-                <div className="space-y-1 sm:space-y-2">
-                  <h1 className="text-3xl sm:text-7xl font-black uppercase leading-[0.9] drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-                    <span className="whitespace-nowrap">{lang === 'en' ? "Trusted" : "رعاية"}</span> <br />
-                    <span className="text-[#DC2626] drop-shadow-[0_0_30px_rgba(220,38,38,0.7)] whitespace-nowrap">
-                      {lang === 'en' ? "Care" : "موثوقة"}
-                    </span>
-                  </h1>
-                  <p className="text-slate-300 text-[10px] sm:text-lg font-bold uppercase tracking-[0.2em] opacity-90">
-                    {lang === 'en' ? "Quality Pharmaceutical Excellence" : "تميز دوائي بجودة عالية"}
-                  </p>
-                </div>
+ {/* 1. HERO SECTION - Logo Centered, Text conditionally anchored to bottom corners */}
+<section className="relative w-full overflow-hidden bg-white z-0">
+  <div className="relative w-full h-[500px] sm:h-[600px] md:h-[700px] flex items-center justify-center bg-white">
+    
+    {/* Logo Container: Perfectly Centered */}
+    <div className="absolute inset-0 flex items-center justify-center p-6 sm:p-12 z-10">
+      <img 
+        src={logo} 
+        alt="Pharmacy Logo" 
+        className="w-auto h-auto max-w-[280px] sm:max-w-[400px] md:max-w-[500px] object-contain block drop-shadow-sm opacity-90" 
+      />
+    </div>
 
-                <div className="relative group w-fit pt-2">
-                    <div className="absolute -inset-1 bg-[#DC2626] rounded-xl blur-xl opacity-50 group-hover:opacity-100 transition duration-500"></div>
-                    <SquircleButton 
-                      variant="primary" 
-                      className="relative !py-2.5 sm:!py-5 !px-7 sm:!px-12 text-xs sm:text-lg shadow-lg"
-                      onClick={scrollToBestSellers} // ✅ Triggers Scroll
-                    >
-                      {lang === 'en' ? "Shop Now" : "تسوق الآن"}
-                    </SquircleButton>
-                </div>
+    {/* Gradient Overlay: Adjusted to ensure text readability in corners */}
+    <div className={`absolute inset-0 z-20 transition-all duration-500 bg-gradient-to-t from-black/80 via-black/20 to-transparent sm:bg-gradient-to-t ${
+      lang === 'en' ? 'sm:bg-gradient-to-tr' : 'sm:bg-gradient-to-tl'
+    }`}>
+      
+      {/* Main Container: Flex used to anchor the text block */}
+      <div className={`container mx-auto h-full px-6 sm:px-12 flex items-end pb-12 sm:pb-20 ${
+        lang === 'en' ? 'justify-start' : 'justify-end'
+      }`}>
+        
+        {/* Text Block: Positioned based on lang while maintaining your styling */}
+        <div className={`max-w-xl flex flex-col space-y-4 sm:space-y-6 animate-fade-in ${
+          lang === 'en' ? 'items-start text-left' : 'items-end text-right'
+        }`}>
+          
+          <div className={`space-y-2 flex flex-col ${lang === 'en' ? 'items-start' : 'items-end'}`}>
+            <h1 className="text-4xl sm:text-7xl font-black uppercase leading-[1.0] sm:leading-[0.9] text-white drop-shadow-lg tracking-tight">
+              <span className="whitespace-nowrap">{lang === 'en' ? "Trusted" : "رعاية"}</span> <br />
+              <span className="text-[#DC2626] drop-shadow-[0_0_20px_rgba(220,38,38,0.5)] whitespace-nowrap">
+                {lang === 'en' ? "Care" : "موثوقة"}
+              </span>
+            </h1>
+            
+            <p className="inline-block px-3 py-1 bg-black/30 backdrop-blur-sm rounded-lg text-white text-[10px] sm:text-lg font-bold uppercase tracking-[0.2em] mt-3">
+              {lang === 'en' ? "Quality Pharmaceutical Excellence" : "تميز دوائي بجودة عالية"}
+            </p>
+          </div>
+
+          <div className="relative group pt-4">
+              <div className="absolute -inset-1 bg-[#DC2626] rounded-xl blur-2xl opacity-40 group-hover:opacity-100 transition duration-500"></div>
+              <SquircleButton 
+                variant="primary" 
+                className="relative !py-3.5 sm:!py-5 !px-9 sm:!px-14 text-xs sm:text-lg shadow-2xl font-black"
+                onClick={scrollToBestSellers}
+              >
+                {lang === 'en' ? "Shop Now" : "تسوق الآن"}
+              </SquircleButton>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+     {/* 2. TRUST BAR - Clean Infinite Marquee (Non-stop) */}
+<section className="bg-white border-y border-slate-100 py-6 relative z-10 overflow-hidden">
+  
+  <div className="flex whitespace-nowrap overflow-hidden">
+    {/* The Scrolling Container - Removed pause-on-hover logic */}
+    <div className="flex animate-marquee items-center gap-12 sm:gap-24 py-2">
+      {[...Array(2)].map((_, outerIndex) => (
+        <div key={outerIndex} className="flex items-center gap-12 sm:gap-24 shrink-0">
+          {[
+            { icon: Truck, t: { en: "Fast Delivery", ar: "توصيل سريع" }, d: { en: "Under 24h", ar: "خلال ٢٤ ساعة" } },
+            { icon: ShieldCheck, t: { en: "100% Original", ar: "أصلي ١٠٠٪" }, d: { en: "Certified", ar: "منتجات معتمدة" } },
+            { icon: Clock, t: { en: "Support 24/7", ar: "دعم متواصل" }, d: { en: "Professional", ar: "صيادلة متخصصون" } },
+            { icon: Award, t: { en: "Best Prices", ar: "أفضل الأسعار" }, d: { en: "Top Deals", ar: "عروض يومية" } },
+          ].map((item, i) => (
+            <div key={`${outerIndex}-${i}`} className="flex items-center gap-4 shrink-0">
+              <item.icon className="text-[#DC2626] shrink-0" size={32} />
+              
+              <div className="flex flex-col leading-none">
+                <span className="font-black text-sm text-[#0F172A] uppercase tracking-tight">
+                  {item.t[lang]}
+                </span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">
+                  {item.d[lang]}
+                </span>
               </div>
             </div>
-          </div>
+          ))}
         </div>
-      </section>
+      ))}
+    </div>
+  </div>
 
-      {/* 2. TRUST BAR */}
-      <section className="bg-white border-y border-slate-100 py-8 relative z-10">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { icon: Truck, t: { en: "Fast Delivery", ar: "توصيل سريع" }, d: { en: "Under 24h", ar: "خلال ٢٤ ساعة" } },
-              { icon: ShieldCheck, t: { en: "100% Original", ar: "أصلي ١٠٠٪" }, d: { en: "Certified", ar: "منتجات معتمدة" } },
-              { icon: Clock, t: { en: "Support 24/7", ar: "دعم متواصل" }, d: { en: "Professional", ar: "صيادلة متخصصون" } },
-              { icon: Award, t: { en: "Best Prices", ar: "أفضل الأسعار" }, d: { en: "Top Deals", ar: "عروض يومية" } },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-4 sm:justify-center">
-                <item.icon className="text-[#DC2626] shrink-0" size={32} />
-                <div className="flex flex-col leading-none">
-                  <span className="font-black text-sm text-[#0F172A] uppercase tracking-tight">{item.t[lang]}</span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">{item.d[lang]}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+  {/* Clean CSS for the Marquee */}
+  <style dangerouslySetInnerHTML={{ __html: `
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+      display: flex;
+      width: max-content;
+      animation: marquee 40s linear infinite; /* Adjusted speed for a smoother glide */
+    }
+    /* dir="rtl" adjustments to prevent direction jumping */
+    [dir="rtl"] .animate-marquee {
+      animation: marquee-rtl 40s linear infinite;
+    }
+    @keyframes marquee-rtl {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(50%); }
+    }
+  `}} />
+</section>
 
-      {/* 3. CATEGORIES SCROLLER */}
-      {/* 3. CATEGORIES SECTION - Highlighted with Title */}
-<section className="py-16 mt-4 sm:mt-10 bg-slate-50/50"> 
+      {/* 3. CATEGORIES SECTION */}
+<section className="py-16 mt-4 sm:mt-10 bg-slate-50/50">
   <div className="container mx-auto px-4">
-    {/* ✅ Section Title Added */}
+
+    {/* Section Title */}
     <div className="flex flex-col items-center mb-10 text-center">
       <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] uppercase tracking-tighter">
         {lang === 'en' ? 'Explore Our Categories' : 'استكشف أقسامنا'}
@@ -160,30 +210,78 @@ const Home = () => {
       <div className="h-1 w-12 bg-[#DC2626] rounded-full mt-2"></div>
     </div>
 
-    <div className="flex overflow-x-auto gap-6 sm:gap-12 pb-6 no-scrollbar snap-x justify-start sm:justify-center">
-      {categories.map((cat) => (
-        <Link 
-          key={cat.id} 
-          to={cat.path} 
-          className="flex flex-col items-center gap-4 shrink-0 snap-center group transition-transform hover:-translate-y-1"
-        >
-          {/* Enhanced Circular Icon with glow on hover */}
-          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center transition-all duration-500 group-hover:border-[#DC2626] group-hover:scale-110 shadow-lg group-hover:shadow-[#DC2626]/20 relative overflow-hidden">
-            {/* Subtle background glow for highlight */}
-            <div className="absolute inset-0 bg-[#DC2626] opacity-0 group-hover:opacity-5 transition-opacity duration-500"></div>
-            
-            <cat.icon 
-              size={32} 
-              className="text-[#DC2626] transition-transform duration-500 group-hover:rotate-6" 
-            />
-          </div>
-          
-          <span className="text-[10px] sm:text-xs font-black uppercase text-[#0F172A] tracking-tighter transition-colors group-hover:text-[#DC2626]">
-            {cat.label[lang]}
-          </span>
-        </Link>
-      ))}
+    {/*
+      KEY FIX: overflow-x-auto also clips vertically by default.
+      Solution: wrap in a div that only masks the x-axis using
+      a negative margin + padding trick, keeping vertical overflow visible.
+    */}
+    <div
+      className="no-scrollbar snap-x snap-mandatory"
+      style={{
+        overflowX: 'auto',
+        overflowY: 'visible',   /* ← lets scale/translate bleed out vertically */
+      }}
+    >
+      <div className="flex gap-4 sm:gap-10 px-6 sm:px-8 py-8
+                      justify-start sm:justify-center">
+        {categories.map((cat) => (
+          <Link
+            key={cat.id}
+            to={cat.path}
+            className="flex flex-col items-center gap-3 shrink-0 snap-center group"
+          >
+            {/* Circle */}
+            <div className="
+              relative
+              w-20 h-20 sm:w-28 sm:h-28
+              rounded-full
+              bg-white
+              flex items-center justify-center
+              shadow-md
+              ring-2 ring-slate-100
+              transition-all duration-300 ease-out
+              group-hover:ring-[#DC2626]/50
+              group-hover:ring-[3px]
+              group-hover:shadow-[0_8px_30px_rgba(220,38,38,0.18)]
+              group-hover:scale-110
+              group-hover:-translate-y-1
+            ">
+              {/* Soft red blush on hover */}
+              <div className="
+                absolute inset-0 rounded-full
+                bg-[#DC2626] opacity-0
+                group-hover:opacity-[0.06]
+                transition-opacity duration-300
+              " />
+
+              <cat.icon
+                size={32}
+                className="
+                  relative z-10
+                  text-[#DC2626]
+                  transition-transform duration-300
+                  group-hover:scale-110
+                "
+              />
+            </div>
+
+            {/* Label */}
+            <span className="
+              text-[10px] sm:text-xs
+              font-black uppercase
+              text-[#0F172A]
+              tracking-tighter
+              transition-colors duration-200
+              group-hover:text-[#DC2626]
+              whitespace-nowrap
+            ">
+              {cat.label[lang]}
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
+
   </div>
 </section>
 
@@ -223,26 +321,55 @@ const Home = () => {
           </div>
         </section>
 
-        {/* 6. SIGNATURE SECTION */}
-        <section className="flex flex-col items-center justify-center py-8 border-t border-slate-100">
-            <div className="max-w-md text-center space-y-2">
-                <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">
-                    {lang === 'en' ? "Our Commitment" : "التزامنا"}
-                </p>
-                <p className="text-slate-500 text-xs italic">
-                    {lang === 'en' 
-                        ? "Quality medicine and a lifetime of professional care."
-                        : "دواء عالي الجودة ورعاية مهنية تدوم مدى الحياة."}
-                </p>
-                <div className="pt-2">
-                    <img 
-                        src={SignatureImg} 
-                        alt="Signature" 
-                        className="h-20 sm:h-28 mx-auto object-contain brightness-0 opacity-80" 
-                    />
-                </div>
-            </div>
-        </section>
+{/* 6. TRANSITION & SIGNATURE SECTION */}
+<section className="relative mt-16">
+
+  {/* Pharmacy Photo - Full Width, Full Display */}
+  <div className="relative w-full overflow-hidden">
+    <img
+      src={HeroImg}
+      alt="Contact Maryland Pharmacy"
+      className="w-full h-[280px] sm:h-[420px] lg:h-[520px] object-cover object-center brightness-[0.55] contrast-110"
+    />
+
+    {/* Always-visible overlay content */}
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-4">
+      <Link
+        to="/contact"
+        className="bg-white/10 backdrop-blur-md text-white border border-white/30 px-8 py-3 rounded-full font-black uppercase tracking-tighter text-sm hover:bg-white/20 hover:border-white/50 transition-all duration-300 hover:scale-105"
+      >
+        {lang === 'en' ? 'Get in Touch' : 'تواصل معنا'}
+      </Link>
+    </div>
+  </div>
+
+  {/* SIGNATURE AREA */}
+  <div className="container mx-auto px-4">
+    <div className="flex flex-col items-center justify-center py-12 border-t border-slate-100/50">
+      <div className="max-w-md text-center space-y-3">
+        <p className="text-[#DC2626] font-black uppercase tracking-[0.3em] text-[10px]">
+          {lang === 'en' ? "Our Commitment" : "التزامنا"}
+        </p>
+
+        <p className="text-slate-600 text-sm sm:text-base italic font-medium leading-relaxed">
+          {lang === 'en'
+            ? '"Quality medicine and a lifetime of professional care is our promise to you."'
+            : '"دواء عالي الجودة ورعاية مهنية تدوم مدى الحياة هو وعدنا لك."'}
+        </p>
+
+        <div className="pt-6 relative group">
+          <img
+            src={SignatureImg}
+            alt="Signature"
+            className="h-20 sm:h-28 mx-auto object-contain brightness-0 opacity-70 transition-all duration-500 group-hover:opacity-100 group-hover:scale-110"
+          />
+          <div className="w-12 h-0.5 bg-[#DC2626]/20 mx-auto mt-2 rounded-full"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
       </div>
     </div>
   );

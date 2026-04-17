@@ -116,17 +116,25 @@ const Header = () => {
               </div>
             </div>
 
-            {/* CENTER: SEARCH - Improved flex-grow and min-width to prevent squeezing */}
+                        {/* CENTER: SEARCH */}
             <form onSubmit={handleSearch} className="flex-grow max-w-xl mx-2 sm:mx-6 group relative">
               <div className="relative w-full">
                 <input 
                   type="text" 
                   placeholder={lang === 'en' ? "Search..." : "ابحث..."}
-                  className="w-full bg-slate-100/50 border border-slate-200/50 rounded-xl py-2 sm:py-2.5 pl-9 sm:pl-10 pr-4 text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-[#DC2626] focus:border-transparent transition-all outline-none"
+                  // ✅ Added dynamic padding: pr-9/10 for Arabic, pl-9/10 for English
+                  className={`w-full bg-slate-100/50 border border-slate-200/50 rounded-xl py-2 sm:py-2.5 
+                    ${lang === 'ar' ? 'pr-9 sm:pr-10 pl-4' : 'pl-9 sm:pl-10 pr-4'} 
+                    text-xs sm:text-sm focus:bg-white focus:ring-2 focus:ring-[#DC2626] focus:border-transparent transition-all outline-none`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <Search size={16} className={`absolute ${lang === 'ar' ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#DC2626]`} />
+                {/* ✅ Icon positioning: right-3 for Arabic, left-3 for English */}
+                <Search 
+                  size={16} 
+                  className={`absolute top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#DC2626] 
+                    ${lang === 'ar' ? 'right-3' : 'left-3'}`} 
+                />
               </div>
             </form>
 

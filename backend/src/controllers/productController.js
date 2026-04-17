@@ -1,30 +1,54 @@
 const Product = require('../models/Product');
 
-// @desc    Fetch all products
+// @desc    Fetch all products (with Pagination, Search, and Low Stock filter)
 // @route   GET /api/products
 // @access  Public
 const getProducts = async (req, res) => {
   try {
+    // 1. Extract Query Parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50; // Default to 50 items for performance
+    const skip = (page - 1) * limit;
+    
+    const { category, lowStock, search } = req.query;
     let query = {};
 
-    // ✅ THE FIX: Intercept the category filter from the frontend
-    if (req.query.category) {
-      if (req.query.category === 'maryland-products') {
-        // If they clicked "Maryland Products", ignore the category string and search by the boolean flag
+    // 2. Handle Low Stock Filter (The missing link for your button)
+    // We define "low stock" as less than 10. Adjust this number as needed.
+    if (lowStock === 'true') {
+      query.stock = { $lt: 10 }; 
+    }
+
+    // 3. Handle Category Filter
+    if (category) {
+      if (category === 'maryland-products') {
         query.isMaryland = true; 
       } else {
-        // Otherwise, search for the exact category string (e.g., "Vitamins")
-        query.category = req.query.category; 
+        query.category = category; 
       }
     }
 
-    // You can also add search keyword logic here if needed in the future
+    // 4. Handle Search Logic
+    if (search) {
+      query.title = { $regex: search, $options: 'i' }; // Case-insensitive search
+    }
 
-    // Sort by isMaryland (-1 means true comes first) so they appear at top of general lists
-    const products = await Product.find(query).sort({ isMaryland: -1, createdAt: -1 });
-    res.json({ products }); // Wrapped in object to match frontend expectation { products: [...] }
+    // 5. Execute Query with Pagination and Sort
+    // We also get the total count to tell the frontend if there's "hasMore"
+    const totalProducts = await Product.countDocuments(query);
+    const products = await Product.find(query)
+      .sort({ isMaryland: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.json({ 
+      products,
+      page,
+      pages: Math.ceil(totalProducts / limit),
+      total: totalProducts
+    }); 
   } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: 'Server Error: ' + error.message });
   }
 };
 
@@ -67,17 +91,16 @@ const deleteProduct = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
   try {
-    // ✅ Updated to include all fields matching your updateProduct logic
     const { title, name, price, description, category, stock, image, isMaryland } = req.body;
 
     const product = new Product({
-      title: title || name, // Fallback just in case your frontend sends 'name' instead of 'title'
+      title: title || name,
       price,
       description,
-      category,     // Saves the actual category (e.g., "Vitamins")
+      category,
       stock: stock || 0,
       image,
-      isMaryland: isMaryland || false,   // Saves the toggle switch state (true/false)
+      isMaryland: isMaryland || false,
     });
 
     const createdProduct = await product.save();
@@ -101,14 +124,12 @@ const updateProduct = async (req, res) => {
       product.price = price || product.price;
       product.description = description || product.description;
       product.category = category || product.category;
-      product.stock = stock !== undefined ? stock : product.stock;
+      product.stock = stock !== undefined ? Number(stock) : product.stock;
       
-      // ✅ FIX: Check undefined to allow toggling OFF
       if (isMaryland !== undefined) {
         product.isMaryland = isMaryland;
       }
 
-      // ✅ FIX: Update 'image' field (not imageURL)
       if (image) {
         product.image = image; 
       }

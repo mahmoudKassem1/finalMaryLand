@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, TrendingUp, Calendar, DollarSign, Truck, Loader2, Mail, Plus, Trash2, Save } from 'lucide-react';
+import { Package, TrendingUp, Calendar, DollarSign, Truck, Loader2, Mail, Plus, Trash2, Save, AlertTriangle, RotateCcw } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import GlassCard from '../../components/ui/GlassCard';
 import Inventory from './Inventory'; 
@@ -24,6 +24,9 @@ const AdminDashboard = () => {
   // UI States
   const [loading, setLoading] = useState(true);
   const [updatingSettings, setUpdatingSettings] = useState(false);
+  
+  // ✅ NEW: Filter State for Inventory
+  const [showLowStock, setShowLowStock] = useState(false);
 
   // 1. FETCH DATA ON LOAD
   useEffect(() => {
@@ -89,7 +92,6 @@ const AdminDashboard = () => {
   };
 
   // Stats Configuration
-  // ✅ FIX: Added fallbacks (|| "Total Sales") so it works even if t is empty
   const statCards = [
     { label: lang === 'ar' ? 'إجمالي المبيعات' : (t.totalSales || "Total Sales"), value: `${stats.totalSales.toLocaleString()} EGP`, icon: DollarSign, color: "bg-emerald-500" },
     { label: lang === 'ar' ? 'إجمالي الطلبات' : (t.totalOrders || "Total Orders"), value: stats.totalOrders.toLocaleString(), icon: Package, color: "bg-amber-500" },
@@ -108,12 +110,37 @@ const AdminDashboard = () => {
       
       {/* 1. Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-3xl sm:text-4xl font-black text-black uppercase tracking-tighter">
-          {lang === 'ar' ? 'نظرة عامة على' : 'Panel'} <span className="text-[#DC2626]">{lang === 'ar' ? 'لوحة التحكم' : 'Overview'}</span>
-        </h1>
-        <p className="text-slate-400 font-bold text-xs sm:text-sm bg-white/5 px-4 py-2 rounded-xl border border-white/10 self-start md:self-auto">
-          {lang === 'ar' ? 'آخر تحديث:' : 'Last Updated:'} {new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}
-        </p>
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-black text-black uppercase tracking-tighter">
+            {lang === 'ar' ? 'نظرة عامة على' : 'Panel'} <span className="text-[#DC2626]">{lang === 'ar' ? 'لوحة التحكم' : 'Overview'}</span>
+          </h1>
+          <p className="text-slate-400 font-bold text-xs mt-1">
+            {lang === 'ar' ? 'آخر تحديث:' : 'Last Updated:'} {new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}
+          </p>
+        </div>
+
+        {/* ✅ Filter Actions Buttons */}
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <button 
+            onClick={() => setShowLowStock(!showLowStock)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-tight transition-all border-2 ${
+              showLowStock 
+              ? 'bg-[#DC2626] border-[#DC2626] text-white shadow-lg shadow-red-500/20' 
+              : 'bg-white border-black/5 text-slate-600 hover:border-[#DC2626] hover:text-[#DC2626]'
+            }`}
+          >
+            <AlertTriangle size={16} />
+            {lang === 'ar' ? 'النواقص' : 'Low Stock'}
+          </button>
+          
+          <button 
+            onClick={() => setShowLowStock(false)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black text-white font-black text-xs uppercase tracking-tight hover:bg-zinc-800 transition-all border-2 border-black"
+          >
+            <RotateCcw size={16} />
+            {lang === 'ar' ? 'إعادة ضبط' : 'Reset'}
+          </button>
+        </div>
       </div>
 
       {/* 2. Financial Overview Stats */}
@@ -210,11 +237,6 @@ const AdminDashboard = () => {
                 </button>
               </div>
             ))}
-            {notificationEmails.length === 0 && (
-              <p className="text-slate-600 text-xs italic text-center py-2">
-                {lang === 'ar' ? 'لا يوجد بريد إضافي. التنبيهات ترسل للمدير الرئيسي فقط.' : 'No extra emails. Alerts sent to main Admin only.'}
-              </p>
-            )}
           </div>
         </GlassCard>
 
@@ -222,8 +244,8 @@ const AdminDashboard = () => {
 
       {/* 5. Inventory Management Section */}
       <div className="pt-4">
-        {/* Helper to ensure Inventory doesn't crash if imported strangely */}
-        {Inventory && <Inventory />}
+        {/* Pass the filter state to the Inventory component */}
+        {Inventory && <Inventory filterLowStock={showLowStock} />}
       </div>
     </div>
   );
