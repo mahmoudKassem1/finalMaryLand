@@ -7,46 +7,55 @@ const getProducts = async (req, res) => {
   try {
     // 1. Extract Query Parameters
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50; // Default to 50 items for performance
+    const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
-    
+
     const { category, lowStock, search } = req.query;
     let query = {};
 
-    // 2. Handle Low Stock Filter (The missing link for your button)
-    // We define "low stock" as less than 10. Adjust this number as needed.
+    // 2. Handle Low Stock Filter
     if (lowStock === 'true') {
-      query.stock = { $lt: 10 }; 
+      query.stock = { $lt: 10 };
     }
 
     // 3. Handle Category Filter
     if (category) {
       if (category === 'maryland-products') {
-        query.isMaryland = true; 
+        query.isMaryland = true;
       } else {
-        query.category = category; 
+        query.category = { $regex: `^${category}$`, $options: 'i' };
       }
     }
 
-    // 4. Handle Search Logic
-    if (search) {
-      query.title = { $regex: search, $options: 'i' }; // Case-insensitive search
+    // 4. ✅ FIX: Search across title, category, AND description simultaneously
+    //    Previously only searched title — meaning a product named "Vitamin C"
+    //    in category "Vitamins" would NOT appear when searching "Vitamins".
+    //    Now uses $or so any matching field returns the product.
+    //    Regex is anchored to the search term (not full-string match) so
+    //    "pan" correctly matches "Panadol", "Panado", etc.
+    if (search && search.trim()) {
+      const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { title:       { $regex: sanitizedSearch, $options: 'i' } },
+        { category:    { $regex: sanitizedSearch, $options: 'i' } },
+        { description: { $regex: sanitizedSearch, $options: 'i' } },
+      ];
     }
 
     // 5. Execute Query with Pagination and Sort
-    // We also get the total count to tell the frontend if there's "hasMore"
     const totalProducts = await Product.countDocuments(query);
     const products = await Product.find(query)
       .sort({ isMaryland: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    res.json({ 
+    res.json({
       products,
       page,
       pages: Math.ceil(totalProducts / limit),
-      total: totalProducts
-    }); 
+      total: totalProducts,
+      hasMore: skip + limit < totalProducts,
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server Error: ' + error.message });
   }
@@ -74,7 +83,6 @@ const getProductById = async (req, res) => {
 const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-
     if (product) {
       await product.deleteOne();
       res.json({ message: 'Product removed' });
@@ -116,23 +124,18 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { title, price, description, category, stock, image, isMaryland } = req.body;
-    
+
     const product = await Product.findById(req.params.id);
 
     if (product) {
-      product.title = title || product.title;
-      product.price = price || product.price;
+      product.title       = title       || product.title;
+      product.price       = price       || product.price;
       product.description = description || product.description;
-      product.category = category || product.category;
-      product.stock = stock !== undefined ? Number(stock) : product.stock;
-      
-      if (isMaryland !== undefined) {
-        product.isMaryland = isMaryland;
-      }
+      product.category    = category    || product.category;
+      product.stock       = stock !== undefined ? Number(stock) : product.stock;
 
-      if (image) {
-        product.image = image; 
-      }
+      if (isMaryland !== undefined) product.isMaryland = isMaryland;
+      if (image) product.image = image;
 
       const updatedProduct = await product.save();
       res.json(updatedProduct);
@@ -148,6 +151,6 @@ module.exports = {
   getProducts,
   getProductById,
   deleteProduct,
-  createProduct, 
-  updateProduct  
+  createProduct,
+  updateProduct,
 };
