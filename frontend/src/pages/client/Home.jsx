@@ -28,23 +28,37 @@ const Home = () => {
   const bestSellersRef = useRef(null);
 
   const [products, setProducts] = useState([]);
+  const [marylandProducts, setMarylandProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchAllProducts = async () => {
       try {
         setLoading(true);
-        const { data } = await api.get('/products');
-        setProducts(data.products || data);
+        // Fetch general products for Best Sellers section
+        const { data } = await api.get('/products?limit=100');
+        setProducts(data.products || []);
       } catch (err) {
         setError(lang === 'en' ? "Failed to load products." : "فشل تحميل المنتجات.");
         console.error(err);
+      }
+    };
+
+    const fetchMarylandProducts = async () => {
+      try {
+        // ✅ Fix: Fetch Maryland products from backend with proper filtering
+        const { data } = await api.get('/products?category=maryland-products&limit=100');
+        setMarylandProducts(data.products || []);
+      } catch (err) {
+        console.error("Failed to load Maryland products", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchProducts();
+
+    fetchAllProducts();
+    fetchMarylandProducts();
   }, [lang]);
 
   const categories = useMemo(() => [
@@ -59,10 +73,45 @@ const Home = () => {
   ], []);
 
   const randomBestSellers = useMemo(() => {
-    return [...products].sort(() => 0.5 - Math.random()).slice(0, 8);
-  }, [products]);
+  const CACHE_KEY = "best_sellers_cache";
+  const CACHE_TIME = 20 * 60 * 1000; // 20 minutes
 
-  const marylandProducts = useMemo(() => products.filter(p => p.isMaryland), [products]);
+  const now = Date.now();
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+
+    // ✅ If cache exists and still valid → use it
+    if (cached && (now - cached.timestamp < CACHE_TIME)) {
+      return cached.data;
+    }
+  } catch (err) {
+    console.error("Cache parse error:", err);
+  }
+
+  // ✅ Filter out Maryland products first
+  const filteredProducts = products.filter(
+    (p) => p.category !== "maryland-products" && !p.isMaryland
+  );
+
+  // ✅ Shuffle and pick 8
+  const shuffled = [...filteredProducts].sort(() => 0.5 - Math.random());
+  const selected = shuffled.slice(0, 8);
+
+  // ✅ Save to cache
+  localStorage.setItem(
+    CACHE_KEY,
+    JSON.stringify({
+      data: selected,
+      timestamp: now,
+    })
+  );
+
+  return selected;
+}, [products]);
+
+  // ✅ Fix: No client-side filtering needed - backend returns only Maryland products
+  // const marylandProducts is now populated from the dedicated fetch above
 
   // ✅ Smooth Scroll Function
   const scrollToBestSellers = () => {

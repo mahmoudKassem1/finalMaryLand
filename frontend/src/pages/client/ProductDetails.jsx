@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCart, ArrowRight, ShieldCheck, ArrowLeft, Truck, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -16,6 +16,11 @@ const ProductDetails = () => {
   const { lang, t } = useApp();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ Read navigation state passed from CategoryPage
+  const fromCategory = location.state?.fromCategory;
+  const fromPage = location.state?.fromPage;
 
   // 1. State for Data
   const [product, setProduct] = useState(null);
@@ -28,7 +33,6 @@ const ProductDetails = () => {
       try {
         setLoading(true);
         const { data } = await api.get(`/products/${id}`);
-        // Support both naming conventions just in case
         setProduct({
             ...data,
             image: data.image || data.imageURL 
@@ -43,6 +47,17 @@ const ProductDetails = () => {
 
     fetchProduct();
   }, [id]);
+
+  // ✅ Smart back: if we came from a category page, go back there restoring the exact page
+  const handleBack = () => {
+    if (fromCategory) {
+      navigate(`/category/${fromCategory}`, {
+        state: { returnPage: fromPage || 1 }
+      });
+    } else {
+      navigate(-1);
+    }
+  };
 
   const handleCheckout = () => {
     if (!product) return;
@@ -85,7 +100,7 @@ const ProductDetails = () => {
       
       {/* Back Button */}
       <button 
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
         className="flex items-center gap-2 text-[#0F172A] font-bold hover:text-[#DC2626] transition-all group"
       >
         {lang === 'en' ? (
@@ -98,14 +113,12 @@ const ProductDetails = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
         
-        {/* ✅ LEFT: Image Section (Updated for Perfect Dimensions) */}
+        {/* LEFT: Image Section */}
         <div className="relative">
-          {/* Decorative Red Blur behind image */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-[#DC2626]/20 rounded-full blur-[80px] -z-10" />
           
           <GlassCard className="p-4 sm:p-8 flex flex-col items-center justify-center border-0 bg-white/50 backdrop-blur-xl">
             <div className="w-full relative rounded-3xl overflow-hidden bg-white shadow-sm border border-slate-100">
-              {/* Aspect Ratio Container (Square by default, adapts to content) */}
               <div className="aspect-square w-full flex items-center justify-center p-4">
                 {product.image ? (
                   <img 
@@ -121,7 +134,6 @@ const ProductDetails = () => {
                 )}
               </div>
 
-              {/* Branding Tag Overlay */}
               {product.isMaryland && (
                 <div className="absolute top-4 left-4 bg-[#DC2626] text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10">
                    EXCLUSIVE

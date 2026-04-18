@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { ShoppingCart, ArrowRight, Package, Loader2, Grid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -15,22 +15,32 @@ const PRODUCTS_PER_PAGE = 6;
 const CategoryPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart } = useCart();
   const { lang, t } = useApp();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  // ✅ Restore page from navigation state if user came back from a product page
+  const [currentPage, setCurrentPage] = useState(location.state?.returnPage || 1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
+    const normalizeCategorySlug = (slug) => {
+      if (slug === 'maryland-products') return 'maryland-products';
+      return slug?.replace(/-/g, ' ').toUpperCase();
+    };
+
     const fetchCategoryProducts = async () => {
       setLoading(true);
-      setCurrentPage(1);
 
       try {
-        const { data } = await api.get(`/products?category=${slug}`);
-        const allProducts = data.products || data || [];
-        setProducts(allProducts);
+        const categoryQuery = normalizeCategorySlug(slug);
+        const { data } = await api.get(`/products?category=${encodeURIComponent(categoryQuery)}&page=${currentPage}`);
+        
+        const fetchedProducts = Array.isArray(data.products) ? data.products : [];
+        setProducts(fetchedProducts);
+        setTotalPages(data.pages || 1);
       } catch (error) {
         console.error("Failed to load category", error);
         toast.error(lang === 'en' ? 'Failed to load products' : 'فشل تحميل المنتجات');
@@ -40,33 +50,26 @@ const CategoryPage = () => {
     };
 
     fetchCategoryProducts();
-  }, [slug, lang]);
+  }, [slug, lang, currentPage]);
 
-  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
-  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-  const visibleProducts = products.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+  const visibleProducts = products;
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // ✅ Navigate to product while passing the current page so we can restore it on back
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`, {
+      state: { fromCategory: slug, fromPage: currentPage }
+    });
+  };
+
   const formatTitle = (str) => {
     if (!str) return '';
     if (str === 'maryland-products') return lang === 'en' ? 'Maryland Products' : 'منتجات ماريلاند';
     return str.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  };
-
-  // Build page number array with ellipsis: [1, '...', 4, 5, 6, '...', 12]
-  const getPageNumbers = () => {
-    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
-    const pages = [];
-    if (currentPage > 3) { pages.push(1); if (currentPage > 4) pages.push('...'); }
-    for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) {
-      pages.push(i);
-    }
-    if (currentPage < totalPages - 2) { if (currentPage < totalPages - 3) pages.push('...'); pages.push(totalPages); }
-    return pages;
   };
 
   return (
@@ -128,8 +131,8 @@ const CategoryPage = () => {
           <div className="flex items-center justify-between text-sm text-slate-400 font-medium">
             <span>
               {lang === 'en'
-                ? `Showing ${startIndex + 1}–${Math.min(startIndex + PRODUCTS_PER_PAGE, products.length)} of ${products.length} products`
-                : `عرض ${startIndex + 1}–${Math.min(startIndex + PRODUCTS_PER_PAGE, products.length)} من ${products.length} منتج`}
+                ? `Showing ${products.length} product${products.length !== 1 ? 's' : ''} on this page`
+                : `عرض ${products.length} منتج على هذه الصفحة`}
             </span>
             <span>
               {lang === 'en'
@@ -143,7 +146,7 @@ const CategoryPage = () => {
             {visibleProducts.map((product) => (
               <div
                 key={product._id}
-                onClick={() => navigate(`/product/${product._id}`)}
+                onClick={() => handleProductClick(product._id)}
                 className="cursor-pointer group h-full"
               >
                 <GlassCard className="p-6 h-full flex flex-col justify-between hover:border-[#DC2626]/30 transition-all">
@@ -195,7 +198,7 @@ const CategoryPage = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-8 flex-wrap">
+            <div className="flex items-center justify-center gap-4 pt-8">
 
               {/* Prev */}
               <button
@@ -214,26 +217,10 @@ const CategoryPage = () => {
                 )}
               </button>
 
-              {/* Page Numbers */}
-              {getPageNumbers().map((page, idx) =>
-                page === '...' ? (
-                  <span key={`ellipsis-${idx}`} className="px-2 text-slate-400 font-bold select-none">
-                    ···
-                  </span>
-                ) : (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`w-10 h-10 rounded-xl border-2 font-black text-sm transition-all duration-200
-                      ${currentPage === page
-                        ? 'bg-[#DC2626] border-[#DC2626] text-white shadow-lg shadow-[#DC2626]/25'
-                        : 'border-slate-200 text-slate-500 hover:border-[#DC2626] hover:text-[#DC2626]'
-                      }`}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
+              {/* Page Indicator */}
+              <span className="px-3 py-2 text-sm font-bold text-slate-500">
+                {lang === 'en' ? `Page ${currentPage} of ${totalPages}` : `صفحة ${currentPage} من ${totalPages}`}
+              </span>
 
               {/* Next */}
               <button

@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+
+:root {
+  /* Tells the browser engine strictly to use light mode rendering */
+  color-scheme: light only;
+  
+  /* Fallback base colors to ensure text and backgrounds don't invert */
+  background-color: #ffffff;
+  color: #000000;
+}
 /* Custom scrollbar for a better medical app feel */
 ::-webkit-scrollbar {
   width: 8px;
