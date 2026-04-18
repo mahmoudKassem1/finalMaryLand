@@ -73,39 +73,54 @@ const Home = () => {
   ], []);
 
   const randomBestSellers = useMemo(() => {
-  const CACHE_KEY = "best_sellers_cache";
-  const CACHE_TIME = 20 * 60 * 1000; // 20 minutes
+  const CACHE_KEY = "best_sellers_cache_v2"; // ✅ change key to avoid old broken cache
+  const CACHE_TIME = 20 * 60 * 1000;
+
+  if (!products || products.length === 0) return [];
 
   const now = Date.now();
 
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
 
-    // ✅ If cache exists and still valid → use it
-    if (cached && (now - cached.timestamp < CACHE_TIME)) {
+    // ✅ Validate cache properly
+    if (
+      cached &&
+      Array.isArray(cached.data) &&
+      cached.data.length > 0 &&
+      now - cached.timestamp < CACHE_TIME
+    ) {
       return cached.data;
     }
   } catch (err) {
-    console.error("Cache parse error:", err);
+    console.error("Cache error:", err);
   }
 
-  // ✅ Filter out Maryland products first
+  // ✅ Safer Maryland filter (handles inconsistent backend)
   const filteredProducts = products.filter(
-    (p) => p.category !== "maryland-products" && !p.isMaryland
+    (p) =>
+      p.category !== "maryland-products" &&
+      p.category !== "maryland" &&
+      p.isMaryland !== true
   );
 
-  // ✅ Shuffle and pick 8
-  const shuffled = [...filteredProducts].sort(() => 0.5 - Math.random());
+  // ⚠️ Important: If filtering removes everything, fallback
+  const safeProducts =
+    filteredProducts.length > 0 ? filteredProducts : products;
+
+  const shuffled = [...safeProducts].sort(() => 0.5 - Math.random());
   const selected = shuffled.slice(0, 8);
 
-  // ✅ Save to cache
-  localStorage.setItem(
-    CACHE_KEY,
-    JSON.stringify({
-      data: selected,
-      timestamp: now,
-    })
-  );
+  // ✅ Save only if valid
+  if (selected.length > 0) {
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        data: selected,
+        timestamp: now,
+      })
+    );
+  }
 
   return selected;
 }, [products]);
