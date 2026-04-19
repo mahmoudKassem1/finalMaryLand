@@ -56,6 +56,11 @@ const Inventory = () => {
   const searchTimerRef = useRef(null);
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  const normalizeCategoryValue = (category) => {
+    if (!category || typeof category !== 'string') return '';
+    return category.trim().toLowerCase().replace(/\s+/g, '-');
+  };
+
   const handleSearchChange = (e) => {
     const val = e.target.value;
     setSearchQuery(val);
@@ -151,7 +156,7 @@ const Inventory = () => {
       title:       product.title,
       price:       product.price,
       stock:       product.stock,
-      category:    product.category,
+      category:    normalizeCategoryValue(product.category),
       description: product.description,
       image:       product.imageURL || product.image,
       isMaryland:  product.isMaryland === true,
@@ -159,7 +164,6 @@ const Inventory = () => {
     setImagePreview(product.imageURL || product.image);
     setImageFile(null);
   };
-
   const cancelEdit = () => {
     setEditingProduct(null);
     setEditForm({});

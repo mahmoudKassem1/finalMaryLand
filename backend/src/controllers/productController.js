@@ -1,5 +1,15 @@
 const Product = require('../models/Product');
 
+const normalizeCategoryQuery = (category) => {
+  if (!category || typeof category !== 'string') return category;
+  return category.replace(/-/g, ' ').trim();
+};
+
+const normalizeCategoryForStorage = (category) => {
+  if (!category || typeof category !== 'string') return category;
+  return category.replace(/-/g, ' ').trim().toUpperCase();
+};
+
 // @desc    Fetch all products (with Pagination, Search, and Low Stock filter)
 // @route   GET /api/products
 // @access  Public
@@ -23,7 +33,8 @@ const getProducts = async (req, res) => {
       if (category === 'maryland-products') {
         query.isMaryland = true;
       } else {
-        query.category = { $regex: `^${category}$`, $options: 'i' };
+        const normalizedCategory = normalizeCategoryQuery(category);
+        query.category = { $regex: `^${normalizedCategory}$`, $options: 'i' };
       }
     }
 
@@ -100,12 +111,13 @@ const deleteProduct = async (req, res) => {
 const createProduct = async (req, res) => {
   try {
     const { title, name, price, description, category, stock, image, isMaryland } = req.body;
+    const normalizedCategory = normalizeCategoryForStorage(category);
 
     const product = new Product({
       title: title || name,
       price,
       description,
-      category,
+      category: normalizedCategory,
       stock: stock || 0,
       image,
       isMaryland: isMaryland || false,
@@ -131,7 +143,7 @@ const updateProduct = async (req, res) => {
       product.title       = title       || product.title;
       product.price       = price       || product.price;
       product.description = description || product.description;
-      product.category    = category    || product.category;
+      product.category    = category ? normalizeCategoryForStorage(category) : product.category;
       product.stock       = stock !== undefined ? Number(stock) : product.stock;
 
       if (isMaryland !== undefined) product.isMaryland = isMaryland;
