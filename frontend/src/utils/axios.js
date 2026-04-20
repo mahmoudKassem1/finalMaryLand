@@ -30,11 +30,13 @@ api.interceptors.request.use(
     // C. Order Management (The Tricky Part)
     // - Admin Fetch List: GET /orders (Exact match)
     // - Admin Update Status: PUT /orders/123/status
+    // - Admin Delete Single / Bulk: DELETE /orders or DELETE /orders/:id
     // - Client Fetch My Orders: GET /orders/myorders (Must NOT be Admin)
-    const isOrderList = url === '/orders' && method === 'get'; 
+    const isOrderList = url === '/orders' && method === 'get';
     const isOrderStatus = url.includes('/orders') && url.includes('/status') && method === 'put';
+    const isOrderDelete = url.includes('/orders') && method === 'delete';
     
-    const shouldUseAdminToken = isDashboard || isSettings || isProductAdmin || isOrderList || isOrderStatus;
+    const shouldUseAdminToken = isDashboard || isSettings || isProductAdmin || isOrderList || isOrderStatus || isOrderDelete;
 
     if (shouldUseAdminToken) {
       // 🔒 Use Admin Token

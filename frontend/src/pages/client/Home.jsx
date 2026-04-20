@@ -36,8 +36,9 @@ const Home = () => {
     const fetchAllProducts = async () => {
       try {
         setLoading(true);
-        // Fetch general products for Best Sellers section
-        const { data } = await api.get('/products?limit=100');
+        // We only use the timestamp to bust the cache, no headers needed!
+        const { data } = await api.get(`/products?limit=100&t=${new Date().getTime()}`);
+        
         setProducts(data.products || []);
       } catch (err) {
         setError(lang === 'en' ? "Failed to load products." : "فشل تحميل المنتجات.");
@@ -73,57 +74,23 @@ const Home = () => {
   ], []);
 
   const randomBestSellers = useMemo(() => {
-  const CACHE_KEY = "best_sellers_cache_v2"; // ✅ change key to avoid old broken cache
-  const CACHE_TIME = 20 * 60 * 1000;
+    if (!products || products.length === 0) return [];
 
-  if (!products || products.length === 0) return [];
-
-  const now = Date.now();
-
-  try {
-    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
-
-    // ✅ Validate cache properly
-    if (
-      cached &&
-      Array.isArray(cached.data) &&
-      cached.data.length > 0 &&
-      now - cached.timestamp < CACHE_TIME
-    ) {
-      return cached.data;
-    }
-  } catch (err) {
-    console.error("Cache error:", err);
-  }
-
-  // ✅ Safer Maryland filter (handles inconsistent backend)
-  const filteredProducts = products.filter(
-    (p) =>
-      p.category !== "maryland-products" &&
-      p.category !== "maryland" &&
-      p.isMaryland !== true
-  );
-
-  // ⚠️ Important: If filtering removes everything, fallback
-  const safeProducts =
-    filteredProducts.length > 0 ? filteredProducts : products;
-
-  const shuffled = [...safeProducts].sort(() => 0.5 - Math.random());
-  const selected = shuffled.slice(0, 8);
-
-  // ✅ Save only if valid
-  if (selected.length > 0) {
-    localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({
-        data: selected,
-        timestamp: now,
-      })
+    // ✅ Safer Maryland filter (handles inconsistent backend)
+    const filteredProducts = products.filter(
+      (p) =>
+        p.category !== "maryland-products" &&
+        p.category !== "maryland" &&
+        p.isMaryland !== true
     );
-  }
 
-  return selected;
-}, [products]);
+    // ⚠️ Important: If filtering removes everything, fallback
+    const safeProducts =
+      filteredProducts.length > 0 ? filteredProducts : products;
+
+    const shuffled = [...safeProducts].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 8);
+  }, [products]);
 
   // ✅ Fix: No client-side filtering needed - backend returns only Maryland products
   // const marylandProducts is now populated from the dedicated fetch above
@@ -375,7 +342,7 @@ const Home = () => {
           <div className="flex items-center gap-4 px-2">
             <Sparkles className="text-[#DC2626]" size={28} />
             <h2 className="text-3xl sm:text-4xl font-black text-[#0F172A] uppercase tracking-tighter">
-              {lang === 'en' ? 'Best Sellers' : 'الأكثر مبيعاً'}
+              {lang === 'en' ? 'Featured products' : 'منتجات مميزة'}
             </h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8">

@@ -7,7 +7,9 @@ const {
   getOrders, 
   updateOrderStatus, 
   getMyOrders,
-  getOrderById 
+  getOrderById,
+  deleteOrder,
+  deleteAllOrders 
 } = require('../controllers/orderController');
 
 // 2. Import Middleware
@@ -19,17 +21,21 @@ const { adminProtect } = require('../middleware/adminMiddleware');
 // Root: 
 // POST = Client creates order (Needs User Token -> protect)
 // GET  = Admin sees all orders (Needs Admin Token -> adminProtect ONLY)
+// DELETE = Admin deletes all orders
 router.route('/')
   .post(protect, addOrderItems) 
-  .get(adminProtect, getOrders); // ✅ REMOVED 'protect' to prevent conflict
+  .get(adminProtect, getOrders)
+  .delete(adminProtect, deleteAllOrders);
 
 // Client: My Orders
 router.route('/myorders').get(protect, getMyOrders);
 
-// Single Order: Get Details
-router.route('/:id').get(protect, getOrderById);
+// Single Order: Get Details / Delete Order
+router.route('/:id')
+  .get(protect, getOrderById)
+  .delete(adminProtect, deleteOrder);
 
 // Admin: Update Status (Needs Admin Token -> adminProtect ONLY)
-router.route('/:id/status').put(adminProtect, updateOrderStatus); // ✅ REMOVED 'protect'
+router.route('/:id/status').put(adminProtect, updateOrderStatus);
 
 module.exports = router;

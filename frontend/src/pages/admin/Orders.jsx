@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Calendar, User, Package, Eye, X, Phone, MapPin, Mail, ArrowRight, Search, CreditCard, Smartphone, Wallet, Banknote } from 'lucide-react';
+import { Loader2, Calendar, User, Package, Eye, X, Phone, MapPin, Mail, ArrowRight, Search, CreditCard, Smartphone, Wallet, Banknote, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 import api from '../../utils/axios';
@@ -16,6 +16,8 @@ const Orders = () => {
   const [statusFilter, setStatusFilter] = useState('all'); // ✅ Added Status Filter State
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   // --- FETCH ORDERS ---
@@ -66,13 +68,52 @@ const Orders = () => {
         order._id === id ? { ...order, status: newStatus } : order
       );
       setOrders(updateList);
-      // Removed setFilteredOrders(updateList) here because the useEffect above handles it automatically
       toast.success(lang === 'en' ? 'Status Updated' : 'تم تحديث الحالة');
     } catch (error) {
-      toast.error("Update failed");
+      toast.error(lang === 'en' ? 'Update failed' : 'فشل التحديث');
       console.error("Update Error:", error);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleDeleteOrder = async (id) => {
+    const confirmMessage = lang === 'ar'
+      ? 'هل أنت متأكد أنك تريد حذف هذا الطلب؟ لا يمكن التراجع عن ذلك.'
+      : 'Are you sure you want to delete this order? This cannot be undone.';
+
+    if (!window.confirm(confirmMessage)) return;
+
+    setDeletingId(id);
+    try {
+      await api.delete(`/orders/${id}`);
+      setOrders((prev) => prev.filter((order) => order._id !== id));
+      toast.success(lang === 'ar' ? 'تم حذف الطلب' : 'Order deleted successfully');
+    } catch (error) {
+      toast.error(lang === 'ar' ? 'فشل حذف الطلب' : 'Failed to delete order');
+      console.error('Delete Order Error:', error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteAllOrders = async () => {
+    const confirmMessage = lang === 'ar'
+      ? 'هل أنت متأكد أنك تريد حذف جميع الطلبات؟ هذا الإجراء لا يمكن التراجع عنه.'
+      : 'Are you sure you want to delete all orders? This action cannot be undone.';
+
+    if (!window.confirm(confirmMessage)) return;
+
+    setDeletingAll(true);
+    try {
+      await api.delete('/orders');
+      setOrders([]);
+      toast.success(lang === 'ar' ? 'تم حذف جميع الطلبات' : 'All orders deleted successfully');
+    } catch (error) {
+      toast.error(lang === 'ar' ? 'فشل حذف الطلبات' : 'Failed to delete all orders');
+      console.error('Delete All Orders Error:', error);
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -148,7 +189,7 @@ const Orders = () => {
         </div>
 
         {/* ✅ Status Filter (Middle Section) */}
-        <div className="w-full xl:w-auto flex items-center p-1.5 bg-[#1E293B] rounded-xl border border-slate-700 overflow-x-auto shadow-lg hide-scrollbar">
+        <div className="w-full xl:w-auto flex items-center p-1.5 bg-[#1E293B] rounded-xl border border-slate-700 overflow-x-auto shadow-lg no-scrollbar">
           {[
             { id: 'all', en: 'All', ar: 'الكل' },
             { id: 'new', en: 'New', ar: 'جديد' },
@@ -182,6 +223,25 @@ const Orders = () => {
             className="w-full xl:w-80 bg-[#1E293B] border border-slate-700 text-white text-sm font-medium py-3 pl-10 pr-4 rounded-xl focus:outline-none focus:border-[#DC2626] focus:ring-1 focus:ring-[#DC2626] placeholder-slate-500 transition-all shadow-lg"
           />
         </div>
+
+        <button
+          type="button"
+          onClick={handleDeleteAllOrders}
+          disabled={deletingAll || orders.length === 0}
+          className="w-full xl:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-xl transition-all shadow-lg border border-red-500 text-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {deletingAll ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              {lang === 'ar' ? 'جاري الحذف...' : 'Deleting...'}
+            </>
+          ) : (
+            <>
+              <Trash2 size={16} />
+              {lang === 'ar' ? 'حذف جميع الطلبات' : 'Delete All Orders'}
+            </>
+          )}
+        </button>
       </div>
 
       {/* 2. DESKTOP TABLE (High Contrast) */}
@@ -277,6 +337,20 @@ const Orders = () => {
                       </div>
                     </div>
 
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => handleDeleteOrder(order._id)}
+                      disabled={deletingId === order._id}
+                      className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all border border-red-500/20 shadow-sm disabled:cursor-not-allowed disabled:opacity-70"
+                      title={lang === 'ar' ? 'حذف الطلب' : 'Delete Order'}
+                    >
+                      {deletingId === order._id ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
+                    </button>
+
                     {/* View Button */}
                     <button 
                       onClick={() => setSelectedOrder(order)}
@@ -354,6 +428,17 @@ const Orders = () => {
                       <option value="Cancelled">Cancelled</option>
                     </select>
                  </div>
+                 <button
+                    onClick={() => handleDeleteOrder(order._id)}
+                    disabled={deletingId === order._id}
+                    className="px-4 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center shadow-sm border border-red-500/20 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-70 transition-colors"
+                 >
+                    {deletingId === order._id ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={18} />
+                    )}
+                 </button>
                  <button 
                     onClick={() => setSelectedOrder(order)}
                     className="px-4 bg-[#DC2626] text-white rounded-xl flex items-center justify-center shadow-lg shadow-red-900/20 active:scale-95 transition-transform"

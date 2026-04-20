@@ -45,7 +45,7 @@ const sendEmail = async (options) => {
     // 2. Send via Resend API
     // NOTE: 'from' must be onboarding@resend.dev until you verify your custom domain tomorrow
     const { data, error } = await resend.emails.send({
-      from: 'Maryland Pharmacy <onboarding@resend.dev>',
+      from: "Maryland Pharmacy <orders@marylandpharmacy.net>",
       to: recipients,
       subject: options.subject,
       html: htmlTemplate,
