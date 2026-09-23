@@ -3,6 +3,8 @@ import { useApp } from '../../context/AppContext';
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
 import { Phone, MessageCircle, MapPin, Facebook, Instagram, Clock, Send, Navigation } from 'lucide-react';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 
 const ContactUs = () => {
   const { lang } = useApp();
@@ -30,6 +32,10 @@ const ContactUs = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-12 pb-20 animate-fade-in" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton fallback="/" label={lang === 'ar' ? 'رجوع' : 'Back'} />
+      </div>
       <div className="text-center space-y-4">
         <h1 className="text-5xl font-black text-[#0F172A] uppercase tracking-tighter">
           {lang === 'en' ? 'Contact' : 'تواصل'} <span className="text-[#DC2626]">{lang === 'en' ? 'Us' : 'معنا'}</span>

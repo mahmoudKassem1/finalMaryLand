@@ -5,6 +5,8 @@ import { toast } from 'react-hot-toast';
 import api from '../../utils/axios';
 import { useApp } from '../../context/AppContext';
 import GlassCard from '../../components/ui/GlassCard';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 
 const Orders = () => {
   const { lang } = useApp();
@@ -28,7 +30,7 @@ const Orders = () => {
       setFilteredOrders(data);
     } catch (error) {
       console.error("Orders Error:", error);
-      toast.error("Failed to load orders");
+      toast.error(lang === 'ar' ? 'تعذر تحميل الطلبات' : 'Failed to load orders');
     } finally {
       setLoading(false);
     }
@@ -164,7 +166,11 @@ const Orders = () => {
   );
 
   return (
-    <div className="space-y-8 pb-20 animate-fade-in">
+    <div className="space-y-8 pb-20 animate-fade-in" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton fallback="/management-panel" label={lang === 'ar' ? 'رجوع' : 'Back'} />
+      </div>
       
       {/* 1. PAGE HEADER & SEARCH & FILTER */}
       {/* Changed to lg:flex-row and lg:items-center to fit the 3 elements perfectly */}
@@ -252,7 +258,6 @@ const Orders = () => {
               <th className="px-6 py-5">Order ID</th>
               <th className="px-6 py-5">Customer</th>
               <th className="px-6 py-5">Date</th>
-              <th className="px-6 py-5">Amount</th>
               <th className="px-6 py-5">Payment</th>
               <th className="px-6 py-5">Status</th>
               <th className="px-6 py-5 text-center">Actions</th>
@@ -290,13 +295,6 @@ const Orders = () => {
                     <Calendar size={14} className="text-slate-500" />
                     {new Date(order.createdAt).toLocaleDateString()}
                   </div>
-                </td>
-
-                {/* Amount */}
-                <td className="px-6 py-4">
-                  <p className="font-black text-lg text-white">
-                    {(order.totalAmount || 0).toLocaleString()} <span className="text-xs text-[#DC2626] font-bold">EGP</span>
-                  </p>
                 </td>
 
                 {/* Payment Method */}
@@ -406,7 +404,7 @@ const Orders = () => {
                     <div className="flex items-center gap-2 mt-1">
                        {getPaymentBadge(order.paymentMethod)}
                        <span className="text-xs text-slate-500 font-medium">|</span>
-                       <p className="text-sm font-black text-[#DC2626]">{(order.totalAmount || 0).toLocaleString()} EGP</p>
+                       <p className="text-sm font-black text-[#DC2626]">{order.orderItems?.length || 0} {lang === 'ar' ? 'أصناف' : 'items'}</p>
                     </div>
                  </div>
                  <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase border ${getStatusStyles(order.status)}`}>
@@ -580,27 +578,21 @@ const Orders = () => {
                   {selectedOrder.orderItems.map((item, i) => (
                     <div key={i} className="flex justify-between items-center p-4 border-b border-slate-700 last:border-0 hover:bg-white/5 transition-colors">
                       <div className="flex items-center gap-4">
+                        <img
+                          src={item.image || item.product?.image || 'https://placehold.co/80x80?text=No+Image'}
+                          alt={item.name}
+                          className="w-12 h-12 rounded-lg bg-white object-contain p-1"
+                        />
                         <span className="bg-[#0F172A] text-white w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm border border-slate-700">
                           {item.qty || 1}
                         </span>
                         <div>
                           <p className="text-white font-bold">{item.name}</p>
-                          <p className="text-xs text-slate-500">Unit Price: {(item.price || 0)} EGP</p>
+                          <p className="text-xs text-slate-500">{lang === 'ar' ? 'الكمية المطلوبة' : 'Requested quantity'}</p>
                         </div>
                       </div>
-                      <p className="text-white font-mono font-bold">
-                        {((item.price || 0) * (item.qty || 1)).toLocaleString()} EGP
-                      </p>
                     </div>
                   ))}
-                  
-                  {/* Total Footer */}
-                  <div className="bg-[#0F172A] p-4 flex justify-between items-center">
-                    <span className="text-slate-400 font-bold uppercase text-xs tracking-wider">Total Amount</span>
-                    <span className="text-2xl font-black text-[#DC2626]">
-                      {(selectedOrder.totalAmount || 0).toLocaleString()} <span className="text-sm text-slate-500">EGP</span>
-                    </span>
-                  </div>
                 </div>
               </div>
 

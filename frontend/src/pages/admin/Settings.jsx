@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Plus, Trash2, Mail, DollarSign } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useApp } from '../../context/AppContext';
 import api from '../../utils/axios';
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 
 const Settings = () => {
+  const { lang } = useApp();
   const [deliveryFee, setDeliveryFee] = useState(0);
   // ✅ State for Emails
   const [notificationEmails, setNotificationEmails] = useState([]);
@@ -20,27 +24,27 @@ const Settings = () => {
         setDeliveryFee(data.deliveryFee || 0);
         setNotificationEmails(data.notificationEmails || []);
       } catch (error) {
-        toast.error('Failed to load settings');
+        toast.error(lang === 'ar' ? 'تعذر تحميل الإعدادات' : 'Failed to load settings');
         console.error(error);
       } finally {
         setLoading(false);
       }
     };
     fetchSettings();
-  }, []);
+  }, [lang]);
 
   // ✅ Add Email Logic
   const handleAddEmail = (e) => {
     e.preventDefault();
     if (!newEmail) return;
     if (notificationEmails.length >= 3) {
-      return toast.error("Maximum 3 emails allowed");
+      return toast.error(lang === 'ar' ? 'الحد الأقصى 3 رسائل بريدية' : 'Maximum 3 emails allowed');
     }
     if (!/\S+@\S+\.\S+/.test(newEmail)) {
-      return toast.error("Invalid email format");
+      return toast.error(lang === 'ar' ? 'صيغة البريد الإلكتروني غير صحيحة' : 'Invalid email format');
     }
     if (notificationEmails.includes(newEmail)) {
-      return toast.error("Email already added");
+      return toast.error(lang === 'ar' ? 'البريد الإلكتروني مضاف بالفعل' : 'Email already added');
     }
 
     setNotificationEmails([...notificationEmails, newEmail]);
@@ -59,9 +63,9 @@ const Settings = () => {
         deliveryFee, 
         notificationEmails // Send array to backend
       });
-      toast.success('Settings Updated');
+      toast.success(lang === 'ar' ? 'تم تحديث الإعدادات' : 'Settings updated');
     } catch (error) {
-      toast.error('Failed to save settings');
+      toast.error(lang === 'ar' ? 'تعذر حفظ الإعدادات' : 'Failed to save settings');
       console.error(error);
     } finally {
       setSaving(false);
@@ -71,7 +75,11 @@ const Settings = () => {
   if (loading) return <div className="p-10 text-center">Loading...</div>;
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton fallback="/management-panel" label={lang === 'ar' ? 'رجوع' : 'Back'} />
+      </div>
       <h1 className="text-3xl font-black text-white">Store Settings</h1>
 
       {/* Delivery Fee Section */}

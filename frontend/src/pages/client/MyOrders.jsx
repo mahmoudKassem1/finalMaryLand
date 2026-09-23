@@ -6,6 +6,8 @@ import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
 import { Package, Clock, Phone, AlertCircle, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -38,9 +40,9 @@ const MyOrders = () => {
   // Helper to get status color/text
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'New': return { color: 'bg-blue-100 text-blue-600', icon: Clock, label: lang === 'en' ? 'Processing' : 'قيد التجهيز' };
-      case 'Delivered': return { color: 'bg-emerald-100 text-emerald-600', icon: CheckCircle2, label: lang === 'en' ? 'Delivered' : 'تم التوصيل' };
-      case 'Cancelled': return { color: 'bg-red-100 text-red-600', icon: XCircle, label: lang === 'en' ? 'Cancelled' : 'ملغي' };
+      case 'New': return { color: 'bg-blue-100 text-blue-600', icon: Clock, label: lang === 'en' ? 'Inquiry Received' : 'قيد الاستفسار' };
+      case 'Delivered': return { color: 'bg-emerald-100 text-emerald-600', icon: CheckCircle2, label: lang === 'en' ? 'Confirmed' : 'تم التأكيد' };
+      case 'Cancelled': return { color: 'bg-red-100 text-red-600', icon: XCircle, label: lang === 'en' ? 'Inquiry Cancelled' : 'تم إلغاء الاستفسار' };
       default: return { color: 'bg-slate-100 text-slate-600', icon: Package, label: status };
     }
   };
@@ -55,6 +57,10 @@ const MyOrders = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-20" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton fallback="/" label={lang === 'ar' ? 'رجوع' : 'Back'} />
+      </div>
       
       {/* Header */}
       <div className="flex flex-col gap-2">
@@ -106,8 +112,8 @@ const MyOrders = () => {
                   </div>
                   
                   <div className="text-right">
-                    <p className="text-xs text-slate-400 uppercase font-bold">{lang === 'en' ? 'Total Amount' : 'الإجمالي'}</p>
-                    <p className="text-2xl font-black text-[#DC2626]">{order.totalAmount || order.totalPrice} EGP</p>
+                    <p className="text-xs text-slate-400 uppercase font-bold">{lang === 'en' ? 'Inquiry Items' : 'أصناف الاستفسار'}</p>
+                    <p className="text-2xl font-black text-[#DC2626]">{order.orderItems?.length || 0} {lang === 'en' ? 'items' : 'أصناف'}</p>
                   </div>
                 </div>
 
@@ -130,7 +136,6 @@ const MyOrders = () => {
                             {displayName}
                           </span>
                         </div>
-                        <span className="font-bold text-slate-900">{item.price} EGP</span>
                       </div>
                     );
                   })}

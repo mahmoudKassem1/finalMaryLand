@@ -11,6 +11,7 @@ import { useAdmin } from './context/AdminContext';
 import Header from './components/layout/Header';
 import AdminHeader from './components/layout/AdminHeader';
 import Footer from './components/layout/Footer';
+import ScrollToTop from './components/ScrollToTop';
 
 // Client Pages
 import Home from './pages/client/Home';
@@ -83,10 +84,12 @@ const App = () => {
   const isAuthPage = authPaths.includes(location.pathname);
 
   return (
-    <div 
+    <>
+      <ScrollToTop />
+      <div 
       dir={lang === 'ar' ? 'rtl' : 'ltr'} 
       className={`min-h-screen liquid-bg transition-all duration-500 ${lang === 'ar' ? 'font-arabic' : ''}`}
-    >
+      >
       <Toaster position="top-center" reverseOrder={false} />
       
       {/* 1. CONDITIONAL HEADERS */}
@@ -154,7 +157,8 @@ const App = () => {
 
       {/* 3. CONDITIONAL FOOTER */}
       {!isAuthPage && !isManagementPath && <Footer />}
-    </div>
+      </div>
+    </>
   );
 };
 

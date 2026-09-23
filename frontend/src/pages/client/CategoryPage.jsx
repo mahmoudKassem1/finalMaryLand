@@ -9,6 +9,9 @@ import { useApp } from '../../context/AppContext';
 
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
+import PriceInquiryNotice from '../../components/PriceInquiryNotice';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 
 const PRODUCTS_PER_PAGE = 6;
 
@@ -75,24 +78,9 @@ const CategoryPage = () => {
   return (
     <div className="space-y-6 animate-fade-in min-h-[60vh] pb-20" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
 
-      {/* Back to Home */}
-      <div className="flex items-center">
-        <Link
-          to="/"
-          className="group flex items-center gap-2 text-slate-500 hover:text-[#DC2626] transition-colors font-bold text-sm uppercase tracking-tighter"
-        >
-          {lang === 'en' ? (
-            <>
-              <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-              Back to Home
-            </>
-          ) : (
-            <>
-              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              العودة للرئيسية
-            </>
-          )}
-        </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton fallback="/" label={lang === 'ar' ? 'رجوع' : 'Back'} />
       </div>
 
       {/* Page Header */}
@@ -109,11 +97,15 @@ const CategoryPage = () => {
       </div>
 
       {loading ? (
-        <div className="min-h-[40vh] flex flex-col items-center justify-center text-slate-400">
-          <Loader2 size={40} className="animate-spin mb-4 text-[#DC2626]" />
-          <p className="font-bold uppercase tracking-widest">
-            {lang === 'en' ? 'Loading Category...' : 'جاري التحميل...'}
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+          {Array.from({ length: PRODUCTS_PER_PAGE }).map((_, index) => (
+            <div key={index} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="h-48 rounded-3xl bg-slate-100" />
+              <div className="mt-5 h-5 w-4/5 rounded-lg bg-slate-200" />
+              <div className="mt-3 h-8 w-32 rounded-xl bg-slate-100" />
+              <div className="mt-5 h-11 rounded-xl bg-slate-100" />
+            </div>
+          ))}
         </div>
       ) : products.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-slate-50 rounded-3xl border border-slate-100">
@@ -174,7 +166,7 @@ const CategoryPage = () => {
                     </div>
 
                     <h3 className="text-lg font-black text-[#0F172A] line-clamp-2 mb-2">{product.title}</h3>
-                    <p className="text-[#DC2626] font-mono font-black text-lg">{product.price} EGP</p>
+                    <PriceInquiryNotice compact={true} lang="ar" />
                   </div>
 
                   <div className="mt-4" onClick={(e) => e.stopPropagation()}>

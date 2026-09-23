@@ -4,25 +4,36 @@ import api from '../utils/axios';
 // eslint-disable-next-line react-refresh/only-export-components
 export const CartContext = createContext();
 
+const normalizeCartItem = (item) => {
+  const parsedQuantity = Number(item.quantity ?? item.qty ?? 1);
+
+  return {
+    _id: item._id,
+    title: item.title || item.name || 'Product',
+    image: item.image || item.imageURL || '',
+    quantity: Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1,
+  };
+};
+
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState(() => {
     const savedCart = localStorage.getItem('maryland_cart');
-    return savedCart ? JSON.parse(savedCart) : [];
+    return savedCart ? JSON.parse(savedCart).map(normalizeCartItem) : [];
   });
 
   useEffect(() => {
     localStorage.setItem('maryland_cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product) => {
+  const addToCart = (product, quantity = 1) => {
     setCartItems((prev) => {
       const existingItem = prev.find(item => item._id === product._id);
       if (existingItem) {
         return prev.map(item =>
-          item._id === product._id ? { ...item, quantity: (item.quantity || 1) + 1 } : item
+          item._id === product._id ? { ...item, quantity: (item.quantity || 1) + quantity } : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...normalizeCartItem(product), quantity }];
     });
   };
 
@@ -45,8 +56,8 @@ export const CartProvider = ({ children }) => {
     localStorage.removeItem('maryland_cart');
   };
 
-  const getCartTotal = () => {
-    return cartItems.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
+  const getCartCount = () => {
+    return cartItems.reduce((count, item) => count + (item.quantity || 1), 0);
   };
 
   // --- CHECKOUT LOGIC ---
@@ -65,8 +76,7 @@ export const CartProvider = ({ children }) => {
           aptNumber: orderData.aptNumber,
           phone: orderData.phone,
         },
-        paymentMethod: orderData.paymentMethod,
-        transactionId: orderData.transactionId  
+        notes: orderData.notes || '',
       };
 
       // ✅ SAFETY FIX: Explicitly grab token to ensure it sends
@@ -109,7 +119,7 @@ export const CartProvider = ({ children }) => {
       removeFromCart, 
       updateQuantity, 
       clearCart, 
-      getCartTotal,
+      getCartCount,
       checkout 
     }}>
       {children}

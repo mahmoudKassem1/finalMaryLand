@@ -5,6 +5,9 @@ import { toast } from 'react-hot-toast';
 
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
+import PriceInquiryNotice from '../../components/PriceInquiryNotice';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 import { useCart } from '../../context/CartContext';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
@@ -75,9 +78,17 @@ const ProductDetails = () => {
   // 3. Loading State
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400">
-        <Loader2 size={40} className="animate-spin mb-4 text-[#DC2626]" />
-        <p className="font-bold tracking-widest uppercase text-sm">Loading...</p>
+      <div className="space-y-6 animate-pulse" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="h-10 w-32 rounded-xl bg-slate-200" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="aspect-square rounded-3xl bg-slate-200" />
+          <div className="space-y-5 pt-8">
+            <div className="h-5 w-28 rounded-full bg-slate-200" />
+            <div className="h-12 w-4/5 rounded-2xl bg-slate-200" />
+            <div className="h-24 w-full rounded-2xl bg-slate-100" />
+            <div className="h-14 w-full rounded-2xl bg-slate-200" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -85,7 +96,7 @@ const ProductDetails = () => {
   // 4. Error State
   if (error || !product) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400">
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <AlertCircle size={40} className="mb-4 text-red-500" />
         <p className="font-bold">{lang === 'en' ? 'Product not found' : 'المنتج غير موجود'}</p>
         <button onClick={() => navigate('/')} className="mt-4 underline hover:text-[#DC2626]">
@@ -98,18 +109,10 @@ const ProductDetails = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-20" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       
-      {/* Back Button */}
-      <button 
-        onClick={handleBack}
-        className="flex items-center gap-2 text-[#0F172A] font-bold hover:text-[#DC2626] transition-all group"
-      >
-        {lang === 'en' ? (
-          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-        ) : (
-          <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-        )}
-        <span>{t.back_to_shop || (lang === 'en' ? 'Back to Shop' : 'العودة للمتجر')}</span>
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton onClick={handleBack} fallback="/" label={t.back_to_shop || (lang === 'en' ? 'Back' : 'رجوع')} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
         
@@ -152,10 +155,7 @@ const ProductDetails = () => {
             <h1 className="text-4xl sm:text-5xl font-black mt-6 text-[#0F172A] leading-tight">
               {product.title}
             </h1>
-            <div className="flex items-baseline gap-2 mt-4">
-               <p className="text-5xl font-mono font-black text-[#DC2626]">{product.price}</p>
-               <span className="font-bold text-xl text-[#0F172A]">{t.egp || (lang === 'en' ? 'EGP' : 'ج.م')}</span>
-            </div>
+            <PriceInquiryNotice product={product} compact={false} lang="ar" />
           </div>
 
           <div className="prose prose-slate max-w-none">

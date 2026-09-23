@@ -1,15 +1,14 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Setting = require('../models/Setting');
-const sendEmail = require('../utils/sendEmail'); 
+const sendEmail = require('../utils/sendEmail');
 
 const addOrderItems = async (req, res) => {
   try {
-    console.log("🚀 --- NEW ORDER ATTEMPT ---");
+    console.log("🚀 --- NEW ORDER/INQUIRY ATTEMPT ---");
     console.log("USER DATA:", req.user ? "Exists" : "NULL!");
-    console.log("BODY DATA:", JSON.stringify(req.body).substring(0, 100) + "...");
 
-    // 🚨 1. Check if User is null
+    // 1. Check if User is null
     if (!req.user) {
       return res.status(401).json({ message: 'Auth Error: req.user is null. Please log in again.' });
     }
@@ -17,88 +16,62 @@ const addOrderItems = async (req, res) => {
     const { 
       orderItems, 
       shippingAddress, 
-      paymentMethod,
-      transactionId 
+      notes 
     } = req.body;
 
-    // 🚨 2. Check if orderItems is valid
+    // 2. Validate order items
     if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
-      return res.status(400).json({ message: 'No order items provided' });
+      return res.status(400).json({ message: 'No inquiry items provided' });
     }
-
-    const settings = await Setting.findOne();
-    const baseDeliveryFee = settings?.deliveryFee ?? 50;
-    const finalPaymentMethod = paymentMethod || 'Cash on Delivery';
 
     const validAddress = {
       street: shippingAddress?.street || 'Unknown Street',
       city: shippingAddress?.city || 'Alexandria',
-      aptNumber: shippingAddress?.aptNumber || '',
       phone: shippingAddress?.phone || req.user.phone || '0000000000'
     };
 
     const dbOrderItems = [];
-    let itemsPrice = 0;
 
     for (const item of orderItems) {
-      // 🚨 3. Check if the item object itself is null (Corrupted frontend cart)
       if (!item) {
-        return res.status(400).json({ message: 'Corrupted cart item. Please clear your cart.' });
+        return res.status(400).json({ message: 'Corrupted item in list. Please refresh your cart.' });
       }
 
       const productId = item._id || item.product;
       
       if (!productId) {
-         return res.status(400).json({ message: 'Invalid product ID in cart' });
+        return res.status(400).json({ message: 'Invalid product ID' });
       }
 
       const dbProduct = await Product.findById(productId);
       
       if (!dbProduct) {
-        return res.status(400).json({ message: `Product no longer available. Clear cart.` });
+        return res.status(400).json({ message: 'One or more items are no longer available.' });
       }
 
-      itemsPrice += dbProduct.price * Number(item.quantity || 1);
       dbOrderItems.push({
         product: dbProduct._id,
-        name: dbProduct.title,  
-        image: dbProduct.image || dbProduct.imageURL, 
-        price: dbProduct.price, 
+        name: dbProduct.title || dbProduct.name,
+        image: dbProduct.image || dbProduct.imageURL || '',
         qty: Number(item.quantity || item.qty || 1)
       });
     }
 
-    const deliveryFee = baseDeliveryFee;
-    const totalAmount = itemsPrice + deliveryFee;
-
-    // 🚨 4. Safe Order Creation
+    // 3. Safe Order/Inquiry Creation (No monetary fields)
     const order = new Order({
-      user: req.user._id, // We verified req.user exists above!
+      user: req.user._id,
       orderItems: dbOrderItems,
       shippingAddress: validAddress,
-      paymentMethod: finalPaymentMethod,
-      itemsPrice,
-      deliveryFee,
-      totalAmount,
-      paymentResult: {
-        id: transactionId || 'Pending',
-        status: 'pending',
-        update_time: Date.now(),
-        email_address: req.user.email,
-      },
-      isPaid: false, 
+      notes: notes || '',
+      status: 'Inquiry Received'
     });
 
     const createdOrder = await order.save();
 
-    // Update Stock
-    for (const item of dbOrderItems) {
-       await Product.findByIdAndUpdate(item.product, { $inc: { stock: -item.qty } });
-    }
-
-    // Email Notification (Non-Blocking)
+    // 4. Background Email Notification to Admin/Staff
     const sendNotification = async () => {
       try {
+        const settings = await Setting.findOne();
         let recipients = [];
         if (settings?.notificationEmails?.length > 0) {
           recipients = settings.notificationEmails;
@@ -109,25 +82,25 @@ const addOrderItems = async (req, res) => {
 
         if (recipients.length > 0) {
           const itemsListHtml = dbOrderItems.map(item => 
-            `<li><strong>${item.name}</strong> (x${item.qty}) - ${item.price} EGP</li>`
+            `<li><strong>${item.name}</strong> (Qty: ${item.qty})</li>`
           ).join('');
 
           const emailHtml = `
-            <h2 style="color: #DC2626;">New Order Received! 🚀</h2>
+            <h2 style="color: #0284C7;">New Order Inquiry Received! 📋</h2>
             <p><strong>Order ID:</strong> ${createdOrder._id}</p>
             <p><strong>Customer:</strong> ${req.user.name}</p>
-            <p><strong>Payment:</strong> ${finalPaymentMethod}</p>
-            <p><strong>Total:</strong> ${totalAmount} EGP</p>
+            <p><strong>Status:</strong> Awaiting WhatsApp Confirmation</p>
+            ${notes ? `<p><strong>Customer Notes:</strong> ${notes}</p>` : ''}
             <hr>
-            <h3>Items:</h3>
+            <h3>Requested Items:</h3>
             <ul>${itemsListHtml}</ul>
-            <h3>Shipping:</h3>
-            <p>${validAddress.street}, ${validAddress.city}<br>Phone: ${validAddress.phone}</p>
+            <h3>Shipping Details:</h3>
+            <p>${validAddress.street}, ${validAddress.city}<br><strong>Phone:</strong> ${validAddress.phone}</p>
           `;
 
           sendEmail({
             to: recipients, 
-            subject: `New Order (${finalPaymentMethod}) - ${req.user.name}`,
+            subject: `New Order Inquiry - ${req.user.name}`,
             html: emailHtml
           });
         }
@@ -142,13 +115,15 @@ const addOrderItems = async (req, res) => {
 
   } catch (error) {
     console.error("🔥 FATAL ORDER ERROR:", error);
-    res.status(500).json({ message: 'Order Failed: ' + error.message });
+    res.status(500).json({ message: 'Order Inquiry Failed: ' + error.message });
   }
 };
 
 const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('user', 'name email');
+    const order = await Order.findById(req.params.id)
+      .populate('user', 'name email phone')
+      .populate('orderItems.product', 'title image imageURL');
 
     if (order) {
       res.json(order);
@@ -165,7 +140,7 @@ const getMyOrders = async (req, res) => {
     const orders = await Order.find({ user: req.user._id })
       .populate({
         path: 'orderItems.product',
-        select: 'title imageURL price'
+        select: 'title image imageURL'
       })
       .sort({ createdAt: -1 });
 
@@ -180,6 +155,7 @@ const getOrders = async (req, res) => {
   try {
     const orders = await Order.find({})
       .populate('user', 'name email phone')
+      .populate('orderItems.product', 'title image imageURL')
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
@@ -193,10 +169,6 @@ const updateOrderStatus = async (req, res) => {
 
     if (order) {
       order.status = req.body.status || order.status;
-      if (req.body.status === 'Delivered') {
-        order.deliveredAt = Date.now();
-      }
-      
       const updatedOrder = await order.save();
       res.json(updatedOrder);
     } else {
@@ -215,7 +187,7 @@ const deleteOrder = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    await order.remove();
+    await Order.findByIdAndDelete(req.params.id);
     res.json({ message: 'Order deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting order' });

@@ -9,6 +9,9 @@ import { useApp } from '../../context/AppContext';
 
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
+import PriceInquiryNotice from '../../components/PriceInquiryNotice';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 
 const SearchPage = () => {
   const [products, setProducts]         = useState([]);
@@ -70,18 +73,25 @@ const SearchPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-slate-400">
-        <Loader2 size={40} className="animate-spin mb-4 text-[#DC2626]" />
-        <p className="font-bold uppercase tracking-widest">
-          {lang === 'en' ? 'Searching...' : 'جاري البحث...'}
-        </p>
+      <div className="min-h-[60vh] space-y-6 animate-pulse" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="h-10 w-56 rounded-2xl bg-slate-200" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="h-48 rounded-3xl bg-slate-100" />
+              <div className="mt-5 h-5 w-4/5 rounded-lg bg-slate-200" />
+              <div className="mt-3 h-8 w-32 rounded-xl bg-slate-100" />
+              <div className="mt-5 h-11 rounded-xl bg-slate-100" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-slate-400 space-y-4">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-slate-400 space-y-4" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <AlertCircle size={40} className="text-red-400" />
         <p className="font-bold">
           {lang === 'en' ? 'Something went wrong. Please try again.' : 'حدث خطأ. يرجى المحاولة مرة أخرى.'}
@@ -95,6 +105,11 @@ const SearchPage = () => {
 
   return (
     <div className="space-y-8 animate-fade-in min-h-[60vh]" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton fallback="/" label={lang === 'ar' ? 'رجوع' : 'Back'} />
+      </div>
 
       {/* Page Header */}
       <div>
@@ -166,7 +181,7 @@ const SearchPage = () => {
                       )}
                     </div>
                     <h3 className="text-lg font-black text-[#0F172A] line-clamp-2 mb-2">{product.title}</h3>
-                    <p className="text-[#DC2626] font-mono font-black text-lg">{product.price} EGP</p>
+                    <PriceInquiryNotice compact={true} lang="ar" />
                   </div>
 
                   <div className="mt-4" onClick={(e) => e.stopPropagation()}>

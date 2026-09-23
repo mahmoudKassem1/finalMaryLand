@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UploadCloud, Star, Package, ArrowLeft, Trash2 } from 'lucide-react';
+import { UploadCloud, Star, Package, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 import api from '../../utils/axios'; 
 import { useApp } from '../../context/AppContext';
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 
 const AddProduct = () => {
   const { lang } = useApp();
@@ -19,7 +21,6 @@ const AddProduct = () => {
   
   const [formData, setFormData] = useState({
     title: '',
-    price: '',
     stock: '',
     category: 'medication', 
     description: '',
@@ -89,8 +90,8 @@ const AddProduct = () => {
  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.price || !formData.description) {
-      return toast.error("Please fill in the required text fields");
+    if (!formData.title || !formData.description) {
+      return toast.error(lang === 'ar' ? 'يرجى ملء الحقول المطلوبة' : 'Please fill in the required text fields');
     }
 
     setLoading(true);
@@ -112,7 +113,6 @@ const AddProduct = () => {
       const payload = {
         ...formData,
         isMaryland: finalIsMaryland,
-        price: Number(formData.price), 
         stock: Number(formData.stock) || 0,
         image: imageUrl || "https://placehold.co/600x400?text=No+Image" 
       };
@@ -126,7 +126,7 @@ const AddProduct = () => {
     } catch (error) {
       console.error("Submission Error:", error);
       const errMsg = error.response?.data?.message || error.message || "Failed to create product";
-      toast.error(errMsg);
+      toast.error(lang === 'ar' ? 'تعذر إضافة المنتج' : errMsg);
     } finally {
       setLoading(false);
     }
@@ -136,16 +136,14 @@ const AddProduct = () => {
   const labelClasses = "text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 mb-1 block";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20 animate-fade-in">
+    <div className="max-w-5xl mx-auto space-y-6 pb-20 animate-fade-in" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton fallback="/management-panel/inventory" label={lang === 'ar' ? 'رجوع' : 'Back'} />
+      </div>
       
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button 
-          onClick={() => navigate(-1)}
-          className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 text-white transition-colors"
-        >
-          <ArrowLeft size={20} />
-        </button>
         <div>
           <h2 className="text-3xl font-black text-black uppercase tracking-tighter flex items-center gap-2">
             Add New Product
@@ -269,16 +267,6 @@ const AddProduct = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className={labelClasses}>Price (EGP)</label>
-                <input 
-                  type="number" 
-                  value={formData.price} 
-                  onChange={e => setFormData({...formData, price: e.target.value})}
-                  className={inputClasses}
-                  placeholder="0.00"
-                />
-              </div>
               <div className="space-y-1">
                 <label className={labelClasses}>Stock Quantity</label>
                 <input 

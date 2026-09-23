@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Package, TrendingUp, Calendar, DollarSign, Truck, Loader2, Mail, Plus, Trash2, Save, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Package, TrendingUp, Calendar, Loader2, Mail, Plus, Trash2, AlertTriangle, RotateCcw } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import GlassCard from '../../components/ui/GlassCard';
 import Inventory from './Inventory'; 
 import api from '../../utils/axios'; 
 import { toast } from 'react-hot-toast';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 
 const AdminDashboard = () => {
   // ✅ FIX: Added "t = {}" to prevent crash if translations aren't loaded yet
@@ -12,10 +14,8 @@ const AdminDashboard = () => {
   
   // Data States
   const [stats, setStats] = useState({ 
-    totalSales: 0, monthlySales: 0, yearlySales: 0, totalOrders: 0 
+    totalInquiries: 0, monthlyInquiries: 0, yearlyInquiries: 0, totalOrders: 0 
   });
-  
-  const [deliveryFee, setDeliveryFee] = useState(50);
   
   // Email States
   const [notificationEmails, setNotificationEmails] = useState([]);
@@ -38,11 +38,10 @@ const AdminDashboard = () => {
         ]);
 
         setStats(statsRes.data);
-        setDeliveryFee(settingsRes.data.deliveryFee );
         setNotificationEmails(settingsRes.data.notificationEmails || []);
       } catch (error) {
         console.error("Dashboard Error:", error);
-        toast.error("Failed to load dashboard data");
+        toast.error(lang === 'ar' ? 'تعذر تحميل بيانات لوحة التحكم' : 'Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
@@ -52,17 +51,16 @@ const AdminDashboard = () => {
   }, []);
 
   // 2. UNIVERSAL SETTINGS UPDATE HANDLER
-  const saveSettings = async (updatedFee, updatedEmails) => {
+  const saveSettings = async (updatedEmails) => {
     setUpdatingSettings(true);
     try {
       await api.put('/settings', { 
-        deliveryFee: updatedFee !== undefined ? updatedFee : deliveryFee, 
         notificationEmails: updatedEmails !== undefined ? updatedEmails : notificationEmails 
       });
       toast.success(lang === 'en' ? 'Settings Updated' : 'تم تحديث الإعدادات');
       return true;
     } catch (error) {
-      toast.error("Update Failed");
+      toast.error(lang === 'ar' ? 'فشل التحديث' : 'Update failed');
       console.log(error)
       return false;
     } finally {
@@ -74,29 +72,29 @@ const AdminDashboard = () => {
   const handleAddEmail = async (e) => {
     e.preventDefault();
     if (!newEmail) return;
-    if (notificationEmails.length >= 3) return toast.error("Max 3 emails allowed");
-    if (!/\S+@\S+\.\S+/.test(newEmail)) return toast.error("Invalid email format");
-    if (notificationEmails.includes(newEmail)) return toast.error("Email already exists");
+    if (notificationEmails.length >= 3) return toast.error(lang === 'ar' ? 'الحد الأقصى 3 رسائل بريدية' : 'Maximum 3 emails allowed');
+    if (!/\S+@\S+\.\S+/.test(newEmail)) return toast.error(lang === 'ar' ? 'صيغة البريد الإلكتروني غير صحيحة' : 'Invalid email format');
+    if (notificationEmails.includes(newEmail)) return toast.error(lang === 'ar' ? 'البريد الإلكتروني مضاف بالفعل' : 'Email already exists');
 
     const updatedList = [...notificationEmails, newEmail];
     setNotificationEmails(updatedList); // Optimistic UI update
     setNewEmail(''); // Clear input
-    await saveSettings(deliveryFee, updatedList); // Save to DB
+    await saveSettings(updatedList); // Save to DB
   };
 
   // HANDLER: Remove Email
   const handleRemoveEmail = async (emailToRemove) => {
     const updatedList = notificationEmails.filter(e => e !== emailToRemove);
     setNotificationEmails(updatedList); // Optimistic UI
-    await saveSettings(deliveryFee, updatedList); // Save to DB
+    await saveSettings(updatedList); // Save to DB
   };
 
   // Stats Configuration
   const statCards = [
-    { label: lang === 'ar' ? 'إجمالي المبيعات' : (t.totalSales || "Total Sales"), value: `${stats.totalSales.toLocaleString()} EGP`, icon: DollarSign, color: "bg-emerald-500" },
-    { label: lang === 'ar' ? 'إجمالي الطلبات' : (t.totalOrders || "Total Orders"), value: stats.totalOrders.toLocaleString(), icon: Package, color: "bg-amber-500" },
-    { label: lang === 'ar' ? 'المبيعات الشهرية' : "Monthly Sales", value: `${stats.monthlySales.toLocaleString()} EGP`, icon: Calendar, color: "bg-[#DC2626]" },
-    { label: lang === 'ar' ? 'المبيعات السنوية' : "Yearly Sales", value: `${stats.yearlySales.toLocaleString()} EGP`, icon: TrendingUp, color: "bg-blue-600" },
+    { label: lang === 'ar' ? 'إجمالي الطلبات' : 'Total Inquiries', value: Number(stats.totalInquiries ?? stats.totalOrders ?? 0).toLocaleString(), icon: Package, color: "bg-emerald-500" },
+    { label: lang === 'ar' ? 'إجمالي الطلبات' : 'Total Orders', value: Number(stats.totalOrders ?? 0).toLocaleString(), icon: Package, color: "bg-amber-500" },
+    { label: lang === 'ar' ? 'طلبات هذا العام' : 'Yearly Inquiries', value: Number(stats.yearlyInquiries ?? stats.yearlyOrders ?? 0).toLocaleString(), icon: TrendingUp, color: "bg-[#DC2626]" },
+    { label: lang === 'ar' ? 'طلبات هذا الشهر' : 'Monthly Inquiries', value: Number(stats.monthlyInquiries ?? stats.monthlyOrders ?? 0).toLocaleString(), icon: Calendar, color: "bg-blue-600" },
   ];
 
   if (loading) return (
@@ -107,6 +105,10 @@ const AdminDashboard = () => {
 
   return (
     <div className={`space-y-8 animate-fade-in pb-10 ${lang === 'ar' ? 'font-arabic' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton fallback="/management-panel" label={lang === 'ar' ? 'رجوع' : 'Back'} />
+      </div>
       
       {/* 1. Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -158,41 +160,8 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* 3. Delivery Fee Management */}
-        <GlassCard variant="dark" className="p-6 sm:p-8 border-l-4 border-l-[#DC2626] sm:border-l-4 rtl:border-l-0 rtl:border-r-4 rtl:border-r-[#DC2626]">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="bg-[#DC2626]/10 p-3 rounded-2xl shrink-0">
-              <Truck size={24} className="text-[#DC2626]" />
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-white">{lang === 'ar' ? 'رسوم التوصيل' : 'Delivery Fee'}</h3>
-              <p className="text-slate-400 text-xs">{lang === 'ar' ? 'يضاف هذا المبلغ لكل طلب' : 'Added to every order'}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <input 
-                type="number" 
-                value={deliveryFee}
-                onChange={(e) => setDeliveryFee(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-black text-white outline-none focus:ring-2 focus:ring-[#DC2626]"
-              />
-              <span className={`absolute top-1/2 -translate-y-1/2 text-slate-500 font-bold text-xs ${lang === 'ar' ? 'left-4' : 'right-4'}`}>EGP</span>
-            </div>
-            <button 
-              onClick={() => saveSettings(Number(deliveryFee), notificationEmails)}
-              disabled={updatingSettings}
-              className="bg-[#DC2626] hover:bg-red-700 text-white p-3.5 rounded-xl transition-colors disabled:opacity-50"
-            >
-              {updatingSettings ? <Loader2 size={20} className="animate-spin"/> : <Save size={20} />}
-            </button>
-          </div>
-        </GlassCard>
-
-        {/* 4. Email Notification Management */}
+      <div className="grid grid-cols-1 gap-6">
+        {/* Email Notification Management */}
         <GlassCard variant="dark" className="p-6 sm:p-8 border-l-4 border-l-amber-500 sm:border-l-4 rtl:border-l-0 rtl:border-r-4 rtl:border-r-amber-500">
           <div className="flex items-center gap-4 mb-6">
             <div className="bg-amber-500/10 p-3 rounded-2xl shrink-0">

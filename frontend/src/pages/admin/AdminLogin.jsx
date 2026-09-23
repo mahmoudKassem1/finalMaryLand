@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext'; 
+import { useApp } from '../../context/AppContext';
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
 import { ShieldCheck, Lock, Loader2 } from 'lucide-react';
@@ -12,6 +13,7 @@ const AdminLogin = () => {
   
   // ✅ FIX: Destructure 'login' (instead of adminLogin)
   const { login, isAdminLoading } = useAdmin();
+  const { lang } = useApp();
   const navigate = useNavigate();
 
   const handleAdminSubmit = async (e) => {
@@ -22,11 +24,11 @@ const AdminLogin = () => {
     
     // 2. Handle Result
     if (result.success) {
-      toast.success('Management Access Granted');
+      toast.success(lang === 'ar' ? 'تم السماح بالدخول إلى الإدارة' : 'Management access granted');
       navigate('/management-panel');
     } else {
       // Show the specific error message from the backend
-      toast.error(result.error || 'Invalid Managerial Credentials');
+      toast.error(result.error || (lang === 'ar' ? 'بيانات الدخول غير صحيحة' : 'Invalid managerial credentials'));
     }
   };
 

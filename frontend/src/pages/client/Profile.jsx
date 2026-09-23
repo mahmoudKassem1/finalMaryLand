@@ -114,7 +114,7 @@ const Profile = () => {
 
     } catch (error) {
       console.error(error);
-      toast.error(error.response?.data?.message || 'Update failed');
+      toast.error(error.response?.data?.message || (lang === 'ar' ? 'فشل التحديث' : 'Update failed'));
       setLoading(false);
     }
   };

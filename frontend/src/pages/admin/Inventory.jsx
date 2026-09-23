@@ -9,6 +9,8 @@ import { useApp } from '../../context/AppContext';
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
 import { toast } from 'react-hot-toast';
+import Breadcrumbs from '../../components/navigation/Breadcrumbs';
+import BackButton from '../../components/navigation/BackButton';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const LIMIT = 20; // Smaller page size works better for lazy loading
@@ -101,7 +103,7 @@ const Inventory = () => {
       setHasMore(serverHasMore);
       setTotal(data.total ?? 0);
     } catch (err) {
-      toast.error('Failed to load inventory');
+      toast.error(lang === 'ar' ? 'تعذر تحميل المخزون' : 'Failed to load inventory');
       console.error(err);
     } finally {
       setLoading(false);
@@ -145,7 +147,7 @@ const Inventory = () => {
       setTotal(prev => prev - 1);
       toast.success(lang === 'en' ? 'Product deleted' : 'تم حذف المنتج');
     } catch {
-      toast.error('Failed to delete product');
+      toast.error(lang === 'ar' ? 'تعذر حذف المنتج' : 'Failed to delete product');
     }
   };
 
@@ -154,7 +156,6 @@ const Inventory = () => {
     setEditingProduct(product._id);
     setEditForm({
       title:       product.title,
-      price:       product.price,
       stock:       product.stock,
       category:    normalizeCategoryValue(product.category),
       description: product.description,
@@ -219,7 +220,7 @@ const Inventory = () => {
       toast.success(lang === 'en' ? 'Product updated' : 'تم تحديث المنتج');
       cancelEdit();
     } catch {
-      toast.error('Failed to update product');
+      toast.error(lang === 'ar' ? 'تعذر تحديث المنتج' : 'Failed to update product');
     } finally {
       setIsSaving(false);
     }
@@ -240,7 +241,11 @@ const Inventory = () => {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs />
+        <BackButton fallback="/management-panel" label={lang === 'ar' ? 'رجوع' : 'Back'} />
+      </div>
 
       {/* ── Header ── */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -425,11 +430,7 @@ const Inventory = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className={labelClasses}>Price (EGP)</label>
-                  <input type="number" value={editForm.price || ''} onChange={e => setEditForm({ ...editForm, price: e.target.value })} className={inputClasses} />
-                </div>
+              <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-1">
                   <label className={labelClasses}>Stock Quantity</label>
                   <input type="number" value={editForm.stock ?? ''} onChange={e => setEditForm({ ...editForm, stock: e.target.value })} className={inputClasses} />
@@ -523,11 +524,8 @@ const Inventory = () => {
                 </div>
               </div>
 
-              {/* Price + Actions */}
+              {/* Actions */}
               <div className="flex items-center gap-4 shrink-0">
-                <p className="font-black text-lg text-[#DC2626] whitespace-nowrap hidden sm:block">
-                  {product.price} <span className="text-xs text-slate-500">EGP</span>
-                </p>
                 <div className="flex gap-2 opacity-100 sm:opacity-40 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => startEdit(product)}
