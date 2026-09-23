@@ -8,7 +8,7 @@ import {
   MapPin, Plus, ShieldCheck, Edit3, Trash2, X, Save, 
   MessageCircle, AlertTriangle, ArrowLeft, CheckCircle2, 
   User, Phone, CreditCard, Truck, Smartphone, Wallet, 
-  Copy, ExternalLink, HelpCircle
+  Copy, ExternalLink, HelpCircle, PackageCheck, Send, Check
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../utils/axios';
@@ -45,8 +45,6 @@ const CheckoutContent = () => {
   const [addresses, setAddresses] = useState([]);
   const [selectedAddrId, setSelectedAddrId] = useState(null);
   const [notes, setNotes] = useState('');
-  
-  // Payment Method starts as null so the user must make an active selection
   const [paymentMethod, setPaymentMethod] = useState(null);
 
   // Address UI Modes
@@ -55,6 +53,9 @@ const CheckoutContent = () => {
   const [editingId, setEditingId] = useState(null);
   const [addressToDelete, setAddressToDelete] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Tracks if WhatsApp message was sent so the user stays on Checkout with options
+  const [submittedOrder, setSubmittedOrder] = useState(null);
 
   // --- 1. INITIALIZATION ---
   useEffect(() => {
@@ -116,7 +117,6 @@ const CheckoutContent = () => {
       toast.success(isAr ? 'تم تحديث العنوان' : 'Address updated');
     } catch (error) {
       console.error("Update Address Error:", error);
-
       toast.error(isAr ? 'فشل تحديث العنوان' : 'Failed to update address');
     } finally {
       setIsProcessing(false);
@@ -209,7 +209,7 @@ ${notes.trim() ? `📝 *Notes:* ${notes.trim()}\n` : ''}
 📦 *Requested Items:*
 ${itemsList}
 
-Please verify the current total price and delivery schedule. Thank you!`
+Please verify current total price and delivery schedule. Thank you!`
     );
   };
 
@@ -252,12 +252,16 @@ Please verify the current total price and delivery schedule. Thank you!`
         const orderId = result.order?._id || result._id || Date.now();
         const waLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${generateWhatsAppMessage(orderId, selectedAddr)}`;
         
-        toast.success(isAr ? 'تم حفظ طلبك! جاري تحويلك للواتساب للتأكيد...' : 'Order saved! Opening WhatsApp...');
+        // Save submitted order info so user remains on this page with all tools active
+        setSubmittedOrder({ orderId, selectedAddr });
         
+        toast.success(isAr ? 'تم إرسال الطلب! فتحنا لك محادثة واتساب.' : 'Order saved! WhatsApp conversation opened.');
+        
+        // Open WhatsApp in a separate tab
         window.open(waLink, '_blank');
         
+        // Clear cart in background without redirecting
         if (clearCart) clearCart();
-        setTimeout(() => navigate('/my-orders'), 1200);
       } else {
         toast.error(result.error || (isAr ? 'تعذر إتمام الطلب' : 'Order submission failed'));
       }
@@ -269,13 +273,53 @@ Please verify the current total price and delivery schedule. Thank you!`
     }
   };
 
+  const isStep1Done = Boolean(selectedAddrId && paymentMethod);
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-24 px-3 sm:px-6" dir={isAr ? 'rtl' : 'ltr'}>
+      {/* Navigation Top Bar */}
       <div className="flex items-center justify-between gap-3">
         <Breadcrumbs />
         <BackButton fallback="/cart" label={isAr ? 'رجوع للسلة' : 'Back to cart'} />
       </div>
-      {/* Header */}
+
+      {/* Post-Order WhatsApp Success Banner */}
+      {submittedOrder && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-emerald-50 border-2 border-emerald-300 shadow-md animate-fade-in space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200 pb-3.5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <Check size={22} />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-emerald-950">
+                  {isAr ? 'تم تسجيل طلبك وإرساله عبر واتساب بنجاح!' : 'Your order is recorded and sent via WhatsApp!'}
+                </h2>
+                <p className="text-xs text-emerald-800 font-medium">
+                  {isAr 
+                    ? `رقم المرجع: #${String(submittedOrder.orderId).slice(-6).toUpperCase()} — يمكنك متابعة الدفع أدناه فور رد الصيدلي.` 
+                    : `Ref #${String(submittedOrder.orderId).slice(-6).toUpperCase()} — Use the payment details below once quoted.`}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate('/my-orders')}
+              className="px-4 py-2 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition-all shadow-sm self-start sm:self-auto"
+            >
+              {isAr ? 'عرض سجل طلباتي' : 'View My Orders'}
+            </button>
+          </div>
+
+          <p className="text-xs text-emerald-900 leading-relaxed font-medium">
+            {isAr
+              ? '💡 يمكنك البقاء في هذه الصفحة لاستخدام بيانات التحويل (انستا باي / فودافون كاش) ونسخ الأرقام بمجرد أن يخبرك الصيدلي بإجمالي المبلغ في المحادثة.'
+              : '💡 You can stay on this page to easily copy InstaPay / Vodafone Cash details once the pharmacist gives you the exact total.'}
+          </p>
+        </div>
+      )}
+
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-5 gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -287,13 +331,89 @@ Please verify the current total price and delivery schedule. Thank you!`
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-            {isAr ? 'اختر العنوان وطريقة الدفع لتأكيد السعر النهائي مع الصيدلي' : 'Choose your address and payment method to finalize with pharmacist'}
+            {isAr ? 'خطوات بسيطة وسريعة لإرسال طلبك ومراجعته مع الصيدلي' : 'Simple steps to register your details and confirm with the pharmacist'}
           </p>
         </div>
 
         <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full w-fit">
           <ShieldCheck size={16} />
           <span>{isAr ? 'صيدلية ماريلاند المعتمدة' : 'Verified Maryland Pharmacy'}</span>
+        </div>
+      </div>
+
+      {/* 3-STEP ROADMAP */}
+      <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 border border-slate-200/90 rounded-3xl p-4 sm:p-6 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+          
+          {/* STEP 1 */}
+          <div className={`flex items-start gap-3.5 p-3.5 rounded-2xl transition-all ${
+            isStep1Done 
+              ? 'bg-emerald-50/80 border border-emerald-200' 
+              : 'bg-white border-2 border-[#DC2626] shadow-md shadow-red-500/5'
+          }`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 transition-transform ${
+              isStep1Done ? 'bg-emerald-600 text-white' : 'bg-[#DC2626] text-white animate-bounce'
+            }`}>
+              {isStep1Done ? <CheckCircle2 size={20} /> : '1'}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-900">
+                  {isAr ? 'الخطوة الأولى' : 'Step 1'}
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  isStep1Done ? 'bg-emerald-200/70 text-emerald-900' : 'bg-red-100 text-[#DC2626] animate-pulse'
+                }`}>
+                  {isStep1Done ? (isAr ? 'مكتملة ✓' : 'Done ✓') : (isAr ? 'جاري الآن' : 'In Progress')}
+                </span>
+              </div>
+              <p className="text-xs font-bold text-slate-900 mt-1">
+                {isAr ? 'تحديد العنوان وطريقة الدفع' : 'Address & Payment Preference'}
+              </p>
+              <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                {isAr ? 'اختر العنوان وطريقة الدفع المناسبة لك' : 'Choose your location and payment preference'}
+              </p>
+            </div>
+          </div>
+
+          {/* STEP 2 */}
+          <div className={`flex items-start gap-3.5 p-3.5 rounded-2xl border transition-all ${
+            submittedOrder ? 'bg-emerald-50/80 border-emerald-200' : 'bg-white border-slate-200/80'
+          }`}>
+            <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center font-black text-sm shrink-0">
+              <MessageCircle size={20} className="text-emerald-600" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+                {isAr ? 'الخطوة الثانية' : 'Step 2'}
+              </span>
+              <p className="text-xs font-bold text-slate-900 mt-1">
+                {isAr ? 'تأكيد السعر عبر واتساب' : 'Price Confirmation via WhatsApp'}
+              </p>
+              <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                {isAr ? 'يراجع الصيدلي الفاتورة ويخبرك بالسعر النهائي' : 'Pharmacist verifies stock and quotes the exact total'}
+              </p>
+            </div>
+          </div>
+
+          {/* STEP 3 */}
+          <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-white border border-slate-200/80 transition-all hover:border-slate-300">
+            <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center font-black text-sm shrink-0">
+              <PackageCheck size={20} className="text-purple-600" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+                {isAr ? 'الخطوة الثالثة' : 'Step 3'}
+              </span>
+              <p className="text-xs font-bold text-slate-900 mt-1">
+                {isAr ? 'استلام الدواء والدفع' : 'Delivery & Payment'}
+              </p>
+              <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                {isAr ? 'توصيل سريع لباب منزلك بالإسكندرية' : 'Doorstep delivery with receipt across Alexandria'}
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -501,7 +621,7 @@ Please verify the current total price and delivery schedule. Thank you!`
               )}
             </div>
 
-            {/* 3 Payment Options (Buttons that act as clear CTA selectors) */}
+            {/* 3 Payment Options */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Option A: Cash on Delivery */}
               <button
@@ -575,7 +695,7 @@ Please verify the current total price and delivery schedule. Thank you!`
               </button>
             </div>
 
-            {/* DYNAMIC RENDERING: Instructions for Elderly / Step-by-Step Clarity */}
+            {/* PAYMENT INSTRUCTIONS */}
             {paymentMethod === 'CashOnDelivery' && (
               <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs leading-relaxed space-y-1.5 animate-fade-in">
                 <p className="font-black text-sm flex items-center gap-1.5 text-emerald-900">
@@ -595,19 +715,18 @@ Please verify the current total price and delivery schedule. Thank you!`
                 <div className="flex items-center justify-between border-b border-purple-200/80 pb-2.5">
                   <span className="font-black text-sm text-purple-900 flex items-center gap-2">
                     <Smartphone size={18} className="text-purple-700" />
-                    <span>{isAr ? 'خطوات التحويل عبر انستا باي (سهلة وبسيطة):' : 'Easy InstaPay Instructions:'}</span>
+                    <span>{isAr ? 'خطوات التحويل عبر انستا باي:' : 'InstaPay Transfer Details:'}</span>
                   </span>
                   <span className="text-[11px] font-bold text-purple-700">3 خطوات</span>
                 </div>
 
-                {/* Elderly-Friendly Step by Step */}
                 <div className="space-y-3 text-xs">
                   <div className="flex items-start gap-2.5">
                     <span className="w-5 h-5 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">1</span>
                     <p className="text-slate-800 font-medium">
                       {isAr 
-                        ? 'اضغط زر "تأكيد الطلب عبر واتساب" بالأسفل وتحدث مع الصيدلي لمعرفة إجمالي الفاتورة.' 
-                        : 'Tap the button below to confirm with the pharmacist on WhatsApp and learn your total.'}
+                        ? 'تواصل مع الصيدلي في محادثة واتساب لمعرفة إجمالي الفاتورة النهائي.' 
+                        : 'Chat with the pharmacist on WhatsApp to confirm the final order price.'}
                     </p>
                   </div>
 
@@ -615,10 +734,9 @@ Please verify the current total price and delivery schedule. Thank you!`
                     <span className="w-5 h-5 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">2</span>
                     <div className="w-full">
                       <p className="text-slate-800 font-medium mb-1.5">
-                        {isAr ? 'افتح تطبيق انستا باي وقم بالتحويل لمعرف الصيدلية أو رقم الهاتف:' : 'Open InstaPay app and transfer to our IPA or Phone:'}
+                        {isAr ? 'افتح تطبيق انستا باي وقم بالتحويل لمعرف الصيدلية أو رقم الهاتف:' : 'Open InstaPay and transfer to our IPA or Phone:'}
                       </p>
                       
-                      {/* Copyable Boxes */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
                         <div className="flex items-center justify-between bg-white border border-purple-200 p-2.5 rounded-xl shadow-sm">
                           <div>
@@ -651,7 +769,6 @@ Please verify the current total price and delivery schedule. Thank you!`
                         </div>
                       </div>
 
-                      {/* Direct Link button */}
                       <a 
                         href={PAYMENT_INFO.InstaPay.link} 
                         target="_blank" 
@@ -669,7 +786,7 @@ Please verify the current total price and delivery schedule. Thank you!`
                     <p className="text-slate-800 font-medium">
                       {isAr 
                         ? 'أرسل لقطة شاشة (Screenshot) لعملية التحويل للصيدلي على نفس محادثة الواتساب ليخرج الطلب فوراً.' 
-                        : 'Send the transfer screenshot to the pharmacist in the WhatsApp chat for instant dispatch.'}
+                        : 'Send the transfer screenshot to the pharmacist in WhatsApp for instant dispatch.'}
                     </p>
                   </div>
                 </div>
@@ -697,7 +814,7 @@ Please verify the current total price and delivery schedule. Thank you!`
                     <p className="text-slate-800 font-medium">
                       {isAr 
                         ? 'أرسل الطلب للصيدلي على واتساب لمعرفة السعر الإجمالي بدقة والتأكد من توافر الأصناف.' 
-                        : 'Send the order to the pharmacist via WhatsApp to verify total price and stock availability.'}
+                        : 'Send the order to the pharmacist via WhatsApp to verify total price and stock.'}
                     </p>
                   </div>
 
@@ -740,7 +857,7 @@ Please verify the current total price and delivery schedule. Thank you!`
                     <p className="text-slate-800 font-medium">
                       {isAr 
                         ? 'أرسل صورة رسالة التأكيد (SMS) للصيدلي عبر واتساب لتأكيد خروج الدواء.' 
-                        : 'Send the confirmation SMS screenshot to the pharmacist via WhatsApp to dispatch your medicine.'}
+                        : 'Send the confirmation SMS screenshot to the pharmacist via WhatsApp to dispatch.'}
                     </p>
                   </div>
                 </div>
@@ -804,7 +921,7 @@ Please verify the current total price and delivery schedule. Thank you!`
               />
             </div>
 
-            {/* Confirm CTA - Disabled / Greyed out if address or payment is missing */}
+            {/* Confirm CTA */}
             <SquircleButton 
               variant="primary" 
               fullWidth 
@@ -883,10 +1000,18 @@ Please verify the current total price and delivery schedule. Thank you!`
   );
 };
 
+// WRAPPER: Allows the component to remain rendered after submission even when cart items are cleared
 const Checkout = () => {
   const { user } = useAuth();
   const { cartItems } = useCart();
-  if (!cartItems || cartItems.length === 0) return <Navigate to="/cart" />;
+  
+  // Only redirect if visited directly with zero items without submitting
+  const [hasVisitedWithItems] = useState(Boolean(cartItems && cartItems.length > 0));
+
+  if (!hasVisitedWithItems && (!cartItems || cartItems.length === 0)) {
+    return <Navigate to="/cart" />;
+  }
+
   return <CheckoutContent key={user ? user._id : 'guest'} />;
 };
 
