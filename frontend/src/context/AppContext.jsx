@@ -4,10 +4,20 @@ import { translations } from '../utils/translations';
 // eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = createContext();
 
+const LANGUAGE_DEFAULT_VERSION = 'arabic-default-v1';
+
 export const AppProvider = ({ children }) => {
-  // Persistence: Initialize from localStorage immediately to prevent "flash" of wrong language
+  // Migrate existing browsers once, then preserve the user's language choice.
   const [lang, setLang] = useState(() => {
-    return localStorage.getItem('maryland_lang') || 'en';
+    const defaultVersion = localStorage.getItem('maryland_lang_default_version');
+
+    if (defaultVersion !== LANGUAGE_DEFAULT_VERSION) {
+      localStorage.setItem('maryland_lang', 'ar');
+      localStorage.setItem('maryland_lang_default_version', LANGUAGE_DEFAULT_VERSION);
+      return 'ar';
+    }
+
+    return localStorage.getItem('maryland_lang') || 'ar';
   });
   
   // Side Effect: Update DOM attributes and storage when language changes

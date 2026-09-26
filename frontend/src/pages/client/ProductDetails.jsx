@@ -21,6 +21,8 @@ const ProductDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isAr = lang !== 'en';
+
   // ✅ Read navigation state passed from CategoryPage
   const fromCategory = location.state?.fromCategory;
   const fromPage = location.state?.fromPage;
@@ -78,14 +80,14 @@ const ProductDetails = () => {
   // 3. Loading State
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="h-10 w-32 rounded-xl bg-slate-200" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <div className="aspect-square rounded-3xl bg-slate-200" />
-          <div className="space-y-5 pt-8">
+      <div className="max-w-6xl mx-auto space-y-6 animate-pulse px-3 sm:px-6" dir={isAr ? 'rtl' : 'ltr'}>
+        <div className="h-9 sm:h-10 w-24 sm:w-32 rounded-xl bg-slate-200" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
+          <div className="aspect-square w-full rounded-3xl bg-slate-200" />
+          <div className="space-y-4 sm:space-y-5 pt-2 sm:pt-8">
             <div className="h-5 w-28 rounded-full bg-slate-200" />
-            <div className="h-12 w-4/5 rounded-2xl bg-slate-200" />
-            <div className="h-24 w-full rounded-2xl bg-slate-100" />
+            <div className="h-9 sm:h-12 w-4/5 rounded-2xl bg-slate-200" />
+            <div className="h-20 sm:h-24 w-full rounded-2xl bg-slate-100" />
             <div className="h-14 w-full rounded-2xl bg-slate-200" />
           </div>
         </div>
@@ -96,8 +98,8 @@ const ProductDetails = () => {
   // 4. Error State
   if (error || !product) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-        <AlertCircle size={40} className="mb-4 text-red-500" />
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400 px-4 text-center" dir={isAr ? 'rtl' : 'ltr'}>
+        <AlertCircle size={40} className="mb-4 text-red-500 shrink-0" />
         <p className="font-bold">{lang === 'en' ? 'Product not found' : 'المنتج غير موجود'}</p>
         <button onClick={() => navigate('/')} className="mt-4 underline hover:text-[#DC2626]">
           {t.back_to_shop || 'Go Home'}
@@ -107,22 +109,26 @@ const ProductDetails = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-20 px-3 sm:px-6" dir={isAr ? 'rtl' : 'ltr'}>
       
       <div className="flex items-center justify-between gap-3">
-        <Breadcrumbs />
-        <BackButton onClick={handleBack} fallback="/" label={t.back_to_shop || (lang === 'en' ? 'Back' : 'رجوع')} />
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <Breadcrumbs />
+        </div>
+        <div className="shrink-0">
+          <BackButton onClick={handleBack} fallback="/" label={t.back_to_shop || (lang === 'en' ? 'Back' : 'رجوع')} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-start">
         
         {/* LEFT: Image Section */}
-        <div className="relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-[#DC2626]/20 rounded-full blur-[80px] -z-10" />
+        <div className="relative w-full overflow-hidden rounded-3xl">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 max-w-full max-h-full bg-[#DC2626]/20 rounded-full blur-[60px] sm:blur-[80px] -z-10" />
           
-          <GlassCard className="p-4 sm:p-8 flex flex-col items-center justify-center border-0 bg-white/50 backdrop-blur-xl">
-            <div className="w-full relative rounded-3xl overflow-hidden bg-white shadow-sm border border-slate-100">
-              <div className="aspect-square w-full flex items-center justify-center p-4">
+          <GlassCard className="p-3 sm:p-6 lg:p-8 flex flex-col items-center justify-center border-0 bg-white/50 backdrop-blur-xl">
+            <div className="w-full relative rounded-2xl sm:rounded-3xl overflow-hidden bg-white shadow-sm border border-slate-100">
+              <div className="aspect-square w-full flex items-center justify-center p-3 sm:p-4">
                 {product.image ? (
                   <img 
                     src={product.image} 
@@ -131,14 +137,14 @@ const ProductDetails = () => {
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-slate-300">
-                    <span className="text-6xl mb-2">💊</span>
-                    <span className="text-xs font-bold uppercase tracking-widest">No Image</span>
+                    <span className="text-5xl sm:text-6xl mb-2">💊</span>
+                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest">No Image</span>
                   </div>
                 )}
               </div>
 
               {product.isMaryland && (
-                <div className="absolute top-4 left-4 bg-[#DC2626] text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg z-10">
+                <div className="absolute top-3 sm:top-4 start-3 sm:start-4 bg-[#DC2626] text-white text-[9px] sm:text-[10px] font-black px-2.5 sm:px-3 py-1 rounded-full shadow-lg z-10">
                    EXCLUSIVE
                 </div>
               )}
@@ -147,19 +153,19 @@ const ProductDetails = () => {
         </div>
 
         {/* RIGHT: Details Section */}
-        <div className="space-y-8 pt-4">
-          <div>
-            <span className="bg-[#DC2626]/10 text-[#DC2626] px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-[#DC2626]/20">
+        <div className="space-y-6 sm:space-y-8 pt-1 sm:pt-4 min-w-0">
+          <div className="min-w-0">
+            <span className="inline-block bg-[#DC2626]/10 text-[#DC2626] px-3 sm:px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-[#DC2626]/20">
               {product.category || 'Pharmacy'}
             </span>
-            <h1 className="text-4xl sm:text-5xl font-black mt-6 text-[#0F172A] leading-tight">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black mt-4 sm:mt-6 text-[#0F172A] leading-tight break-words">
               {product.title}
             </h1>
-            <PriceInquiryNotice product={product} compact={false} lang="ar" />
+            <PriceInquiryNotice product={product} compact={false} lang={isAr ? 'ar' : 'en'} />
           </div>
 
           <div className="prose prose-slate max-w-none">
-            <p className="text-slate-600 leading-relaxed text-lg">
+            <p className="text-slate-600 leading-relaxed text-base sm:text-lg break-words">
               {product.description || (lang === 'en' 
                 ? `High-quality pharmaceutical grade product exclusively formulated for Maryland Pharmacy.`
                 : `منتج عالي الجودة تم تركيبه خصيصاً لصيدلية ماريلاند.`
@@ -168,14 +174,14 @@ const ProductDetails = () => {
           </div>
 
           {/* Info Badges */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className={`flex items-center gap-3 p-4 rounded-2xl border ${product.stock > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
-              <ShieldCheck className={product.stock > 0 ? "text-emerald-600" : "text-red-600"} />
-              <div className="flex flex-col">
-                <span className={`font-bold text-xs ${product.stock > 0 ? "text-emerald-700" : "text-red-700"}`}>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className={`flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-2xl border min-w-0 ${product.stock > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+              <ShieldCheck size={22} className={`shrink-0 ${product.stock > 0 ? "text-emerald-600" : "text-red-600"}`} />
+              <div className="flex flex-col min-w-0">
+                <span className={`font-bold text-[11px] sm:text-xs truncate ${product.stock > 0 ? "text-emerald-700" : "text-red-700"}`}>
                     {lang === 'en' ? 'Availability' : 'التوفر'}
                 </span>
-                <span className={`text-sm font-bold ${product.stock > 0 ? "text-emerald-900" : "text-red-900"}`}>
+                <span className={`text-xs sm:text-sm font-bold truncate ${product.stock > 0 ? "text-emerald-900" : "text-red-900"}`}>
                   {product.stock > 0 
                     ? (lang === 'en' ? 'In Stock' : 'متوفر')
                     : (lang === 'en' ? 'Out of Stock' : 'غير متوفر')
@@ -183,13 +189,13 @@ const ProductDetails = () => {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-              <Truck className="text-blue-600" />
-              <div className="flex flex-col">
-                <span className="text-blue-700 font-bold text-xs">
+            <div className="flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 bg-blue-50 rounded-2xl border border-blue-100 min-w-0">
+              <Truck size={22} className="text-blue-600 shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="text-blue-700 font-bold text-[11px] sm:text-xs truncate">
                     {lang === 'en' ? 'Shipping' : 'الشحن'}
                 </span>
-                <span className="text-blue-900 font-bold text-sm">
+                <span className="text-blue-900 font-bold text-xs sm:text-sm truncate">
                     {t.express_delivery || (lang === 'en' ? 'Fast Delivery' : 'توصيل سريع')}
                 </span>
               </div>
@@ -197,10 +203,10 @@ const ProductDetails = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-200">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-slate-200">
             <SquircleButton 
               variant="secondary" 
-              className="flex-1 !py-5 shadow-lg border-2 border-slate-100" 
+              className="flex-1 !py-4 sm:!py-5 shadow-lg border-2 border-slate-100" 
               icon={ShoppingCart}
               onClick={() => {
                 addToCart(product);
@@ -213,7 +219,7 @@ const ProductDetails = () => {
             
             <SquircleButton 
               variant="primary" 
-              className="flex-1 !py-5 shadow-xl shadow-red-900/20" 
+              className="flex-1 !py-4 sm:!py-5 shadow-xl shadow-red-900/20" 
               icon={ArrowRight}
               onClick={handleCheckout}
               disabled={product.stock === 0}

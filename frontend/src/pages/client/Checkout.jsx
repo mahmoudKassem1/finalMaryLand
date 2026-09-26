@@ -8,7 +8,8 @@ import {
   MapPin, Plus, ShieldCheck, Edit3, Trash2, X, Save, 
   MessageCircle, AlertTriangle, ArrowLeft, CheckCircle2, 
   User, Phone, CreditCard, Truck, Smartphone, Wallet, 
-  Copy, ExternalLink, HelpCircle, PackageCheck, Send, Check
+  Copy, ExternalLink, HelpCircle, PackageCheck, Send, Check,
+  Undo2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../utils/axios';
@@ -371,7 +372,9 @@ Please verify current total price and delivery schedule. Thank you!`
                 {isAr ? 'تحديد العنوان وطريقة الدفع' : 'Address & Payment Preference'}
               </p>
               <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
-                {isAr ? 'اختر العنوان وطريقة الدفع المناسبة لك' : 'Choose your location and payment preference'}
+                {isAr 
+                  ? 'اختر عنوانك، ثم اضغط على طريقة الدفع التي تناسبك من الثلاث طرق بالأسفل' 
+                  : 'Pick your address, then tap your preferred payment method from the 3 options below'}
               </p>
             </div>
           </div>
@@ -388,32 +391,76 @@ Please verify current total price and delivery schedule. Thank you!`
                 {isAr ? 'الخطوة الثانية' : 'Step 2'}
               </span>
               <p className="text-xs font-bold text-slate-900 mt-1">
-                {isAr ? 'تأكيد السعر عبر واتساب' : 'Price Confirmation via WhatsApp'}
+                {isAr ? 'اضغط "تأكيد الطلب" — سيفتح واتساب' : 'Tap "Confirm Order" — WhatsApp will open'}
               </p>
               <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
-                {isAr ? 'يراجع الصيدلي الفاتورة ويخبرك بالسعر النهائي' : 'Pharmacist verifies stock and quotes the exact total'}
+                {isAr 
+                  ? 'يراجع الصيدلي طلبك ويخبرك بالسعر النهائي + رسوم التوصيل حسب منطقتك' 
+                  : 'The pharmacist checks your order and tells you the final price + delivery fee for your area'}
               </p>
             </div>
           </div>
 
-          {/* STEP 3 */}
-          <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-white border border-slate-200/80 transition-all hover:border-slate-300">
-            <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center font-black text-sm shrink-0">
-              <PackageCheck size={20} className="text-purple-600" />
+          {/* STEP 3 — dynamic based on chosen payment method */}
+          <div className={`flex items-start gap-3.5 p-3.5 rounded-2xl border transition-all ${
+            paymentMethod === 'CashOnDelivery'
+              ? 'bg-emerald-50/80 border-emerald-200'
+              : paymentMethod
+                ? 'bg-amber-50/80 border-amber-300'
+                : 'bg-white border-slate-200/80 hover:border-slate-300'
+          }`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 ${
+              paymentMethod === 'CashOnDelivery' 
+                ? 'bg-emerald-600 text-white' 
+                : paymentMethod 
+                  ? 'bg-amber-500 text-white animate-pulse' 
+                  : 'bg-slate-100 text-slate-600'
+            }`}>
+              {paymentMethod === 'CashOnDelivery' ? (
+                <Truck size={20} />
+              ) : paymentMethod ? (
+                <Undo2 size={20} />
+              ) : (
+                <PackageCheck size={20} className="text-purple-600" />
+              )}
             </div>
             <div className="min-w-0">
               <span className="text-xs font-black uppercase tracking-wider text-slate-700">
                 {isAr ? 'الخطوة الثالثة' : 'Step 3'}
               </span>
               <p className="text-xs font-bold text-slate-900 mt-1">
-                {isAr ? 'استلام الدواء والدفع' : 'Delivery & Payment'}
+                {paymentMethod === 'CashOnDelivery'
+                  ? (isAr ? 'استلام الدواء والدفع كاش — انتهيت! ✓' : 'Receive Order & Pay Cash — You\'re Done! ✓')
+                  : paymentMethod
+                    ? (isAr ? 'ارجع لهذه الصفحة لإتمام التحويل' : 'Come Back to This Page to Pay')
+                    : (isAr ? 'استلام الدواء والدفع' : 'Delivery & Payment')}
               </p>
               <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
-                {isAr ? 'توصيل سريع لباب منزلك بالإسكندرية' : 'Doorstep delivery with receipt across Alexandria'}
+                {paymentMethod === 'CashOnDelivery'
+                  ? (isAr 
+                      ? 'ادفع نقداً للمندوب عند استلام الدواء على باب منزلك — لا حاجة لأي خطوات أخرى' 
+                      : 'Pay cash to the courier at your door when the order arrives — nothing else to do')
+                  : paymentMethod
+                    ? (isAr 
+                        ? 'بعد اتفاقك مع الصيدلي على السعر في واتساب، ارجع هنا لتنفيذ التحويل، ثم أرسل صورة الإيصال في نفس محادثة الواتساب' 
+                        : 'After the pharmacist confirms the price on WhatsApp, return to this page to finish the transfer, then send the receipt screenshot back on WhatsApp')
+                    : (isAr ? 'توصيل سريع لباب منزلك بالإسكندرية' : 'Doorstep delivery with receipt across Alexandria')}
               </p>
             </div>
           </div>
 
+        </div>
+
+        {/* DELIVERY FEE NOTICE — always visible, highlighted with icon + subtle animation */}
+        <div className="mt-4 p-3.5 sm:p-4 rounded-2xl bg-blue-50 border-2 border-blue-200 flex items-start sm:items-center gap-3 animate-fade-in">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 animate-pulse">
+            <Truck size={18} />
+          </div>
+          <p className="text-xs sm:text-sm font-bold text-blue-950 leading-snug">
+            {isAr 
+              ? '🚚 هام: رسوم التوصيل تختلف حسب منطقتك داخل الإسكندرية، وسيخبرك بها الصيدلي بالتحديد على واتساب مع السعر الإجمالي.' 
+              : '🚚 Important: The delivery fee depends on your area within Alexandria and will be confirmed by the pharmacist on WhatsApp along with your total price.'}
+          </p>
         </div>
       </div>
 
@@ -704,8 +751,8 @@ Please verify current total price and delivery schedule. Thank you!`
                 </p>
                 <p className="font-medium text-emerald-900/90 text-xs">
                   {isAr 
-                    ? 'ستدفع المبلغ نقداً لمندوب الصيدلية فور استلام الأدوية وفحصها عند باب منزلك. سيخبرك الصيدلي بإجمالي الفاتورة بدقة على واتساب.' 
-                    : 'Pay the exact cash to the courier upon delivery at your door. The pharmacist will inform you of the exact total over WhatsApp.'}
+                    ? 'ستدفع المبلغ نقداً لمندوب الصيدلية فور استلام الأدوية وفحصها عند باب منزلك. سيخبرك الصيدلي بإجمالي الفاتورة (شامل رسوم التوصيل حسب منطقتك) بدقة على واتساب.' 
+                    : 'Pay the exact cash to the courier upon delivery at your door. The pharmacist will tell you the exact total — including the delivery fee for your area — over WhatsApp.'}
                 </p>
               </div>
             )}
@@ -717,7 +764,7 @@ Please verify current total price and delivery schedule. Thank you!`
                     <Smartphone size={18} className="text-purple-700" />
                     <span>{isAr ? 'خطوات التحويل عبر انستا باي:' : 'InstaPay Transfer Details:'}</span>
                   </span>
-                  <span className="text-[11px] font-bold text-purple-700">3 خطوات</span>
+                  <span className="text-[11px] font-bold text-purple-700">{isAr ? '4 خطوات' : '4 Steps'}</span>
                 </div>
 
                 <div className="space-y-3 text-xs">
@@ -725,13 +772,24 @@ Please verify current total price and delivery schedule. Thank you!`
                     <span className="w-5 h-5 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">1</span>
                     <p className="text-slate-800 font-medium">
                       {isAr 
-                        ? 'تواصل مع الصيدلي في محادثة واتساب لمعرفة إجمالي الفاتورة النهائي.' 
-                        : 'Chat with the pharmacist on WhatsApp to confirm the final order price.'}
+                        ? 'تواصل مع الصيدلي في محادثة واتساب لمعرفة إجمالي الفاتورة النهائي + رسوم التوصيل حسب منطقتك.' 
+                        : 'Chat with the pharmacist on WhatsApp to confirm the final order price + delivery fee for your area.'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 p-2.5 -mx-1 rounded-xl bg-amber-50 border border-amber-200">
+                    <span className="w-5 h-5 rounded-full bg-amber-500 text-white font-black flex items-center justify-center shrink-0 mt-0.5">
+                      <Undo2 size={12} />
+                    </span>
+                    <p className="text-amber-900 font-bold">
+                      {isAr 
+                        ? 'ارجع إلى هذه الصفحة (موقع صيدلية ماريلاند) لترى بيانات التحويل بالأسفل.' 
+                        : 'Return to this page (Maryland Pharmacy website) to see the transfer details below.'}
                     </p>
                   </div>
 
                   <div className="flex items-start gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">2</span>
+                    <span className="w-5 h-5 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">3</span>
                     <div className="w-full">
                       <p className="text-slate-800 font-medium mb-1.5">
                         {isAr ? 'افتح تطبيق انستا باي وقم بالتحويل لمعرف الصيدلية أو رقم الهاتف:' : 'Open InstaPay and transfer to our IPA or Phone:'}
@@ -782,7 +840,7 @@ Please verify current total price and delivery schedule. Thank you!`
                   </div>
 
                   <div className="flex items-start gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">3</span>
+                    <span className="w-5 h-5 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">4</span>
                     <p className="text-slate-800 font-medium">
                       {isAr 
                         ? 'أرسل لقطة شاشة (Screenshot) لعملية التحويل للصيدلي على نفس محادثة الواتساب ليخرج الطلب فوراً.' 
@@ -805,7 +863,7 @@ Please verify current total price and delivery schedule. Thank you!`
                     <Wallet size={18} />
                     <span>{isAr ? 'خطوات التحويل عبر فودافون كاش:' : 'Vodafone Cash Instructions:'}</span>
                   </span>
-                  <span className="text-[11px] font-bold text-[#DC2626]">3 خطوات</span>
+                  <span className="text-[11px] font-bold text-[#DC2626]">{isAr ? '4 خطوات' : '4 Steps'}</span>
                 </div>
 
                 <div className="space-y-3 text-xs">
@@ -813,13 +871,24 @@ Please verify current total price and delivery schedule. Thank you!`
                     <span className="w-5 h-5 rounded-full bg-[#DC2626] text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">1</span>
                     <p className="text-slate-800 font-medium">
                       {isAr 
-                        ? 'أرسل الطلب للصيدلي على واتساب لمعرفة السعر الإجمالي بدقة والتأكد من توافر الأصناف.' 
-                        : 'Send the order to the pharmacist via WhatsApp to verify total price and stock.'}
+                        ? 'أرسل الطلب للصيدلي على واتساب لمعرفة السعر الإجمالي بدقة + رسوم التوصيل حسب منطقتك، والتأكد من توافر الأصناف.' 
+                        : 'Send the order to the pharmacist via WhatsApp to verify total price, delivery fee for your area, and stock.'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 p-2.5 -mx-1 rounded-xl bg-amber-50 border border-amber-200">
+                    <span className="w-5 h-5 rounded-full bg-amber-500 text-white font-black flex items-center justify-center shrink-0 mt-0.5">
+                      <Undo2 size={12} />
+                    </span>
+                    <p className="text-amber-900 font-bold">
+                      {isAr 
+                        ? 'ارجع إلى هذه الصفحة (موقع صيدلية ماريلاند) لترى رقم المحفظة بالأسفل.' 
+                        : 'Return to this page (Maryland Pharmacy website) to see the wallet number below.'}
                     </p>
                   </div>
 
                   <div className="flex items-start gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-[#DC2626] text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">2</span>
+                    <span className="w-5 h-5 rounded-full bg-[#DC2626] text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">3</span>
                     <div className="w-full">
                       <p className="text-slate-800 font-medium mb-1.5">
                         {isAr ? 'حوّل المبلغ إلى رقم محفظة الصيدلية التالي:' : 'Transfer the total to our official pharmacy wallet:'}
@@ -853,7 +922,7 @@ Please verify current total price and delivery schedule. Thank you!`
                   </div>
 
                   <div className="flex items-start gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-[#DC2626] text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">3</span>
+                    <span className="w-5 h-5 rounded-full bg-[#DC2626] text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">4</span>
                     <p className="text-slate-800 font-medium">
                       {isAr 
                         ? 'أرسل صورة رسالة التأكيد (SMS) للصيدلي عبر واتساب لتأكيد خروج الدواء.' 
