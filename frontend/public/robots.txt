@@ -1,0 +1,19 @@
+# Maryland Pharmacy - Robots Configuration
+# Designed & Developed by Mahmoud Kassem (https://www.linkedin.com/in/mahmoud-kassem-91aa22305/)
+
+User-agent: *
+Allow: /
+Allow: /shop
+Allow: /category/
+Allow: /contact
+
+# Disallow Private & Admin Areas
+Disallow: /admin/
+Disallow: /admin
+Disallow: /api/
+Disallow: /checkout
+Disallow: /my-orders
+Disallow: /cart
+
+# Sitemap Location
+Sitemap: https://marylandpharmacy.com/sitemap.xml
