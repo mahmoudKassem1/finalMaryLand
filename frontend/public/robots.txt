@@ -16,4 +16,4 @@ Disallow: /my-orders
 Disallow: /cart
 
 # Sitemap Location
-Sitemap: https://marylandpharmacy.com/sitemap.xml
+Sitemap: https://www.marylandpharmacy.net/sitemap.xml
