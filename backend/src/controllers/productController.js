@@ -1,5 +1,8 @@
 const Product = require('../models/Product');
 
+const MAX_LIMIT = 100;
+const CI_COLLATION = { locale: 'en', strength: 2 }; // case-insensitive, index-friendly
+
 const normalizeCategoryQuery = (category) => {
   if (!category || typeof category !== 'string') return category;
   return category.replace(/-/g, ' ').trim();
@@ -10,40 +13,44 @@ const normalizeCategoryForStorage = (category) => {
   return category.replace(/-/g, ' ').trim().toUpperCase();
 };
 
-// @desc    Fetch all products (with Pagination, Search, and Low Stock filter)
+// Every sort ends with _id so pagination is stable (no duplicated / skipped items between pages)
+const SORT_OPTIONS = {
+  latest:   { createdAt: -1, _id: -1 },
+  featured: { isMaryland: -1, createdAt: -1, _id: -1 },
+  name:     { title: 1, _id: 1 },
+};
+
+// @desc    Fetch all products (with Pagination, Sort, Search, and Low Stock filter)
 // @route   GET /api/products
 // @access  Public
 const getProducts = async (req, res) => {
   try {
     // 1. Extract Query Parameters
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || 12));
     const skip = (page - 1) * limit;
 
-    const { category, lowStock, search } = req.query;
-    let query = {};
+    const { category, lowStock, search, sort } = req.query;
+    const query = {};
 
     // 2. Handle Low Stock Filter
     if (lowStock === 'true') {
       query.stock = { $lt: 10 };
     }
 
-    // 3. Handle Category Filter
-    if (category) {
+    // 3. Handle Category Filter ('all' or empty = no filter)
+    if (category && category !== 'all') {
       if (category === 'maryland-products') {
         query.isMaryland = true;
       } else {
-        const normalizedCategory = normalizeCategoryQuery(category);
-        query.category = { $regex: `^${normalizedCategory}$`, $options: 'i' };
+        // Exact match (case-insensitive via collation) instead of an unanchored-index-unfriendly regex,
+        // so MongoDB can use the category indexes.
+        query.category = normalizeCategoryQuery(category);
       }
     }
 
-    // 4. ✅ FIX: Search across title, category, AND description simultaneously
-    //    Previously only searched title — meaning a product named "Vitamin C"
-    //    in category "Vitamins" would NOT appear when searching "Vitamins".
-    //    Now uses $or so any matching field returns the product.
-    //    Regex is anchored to the search term (not full-string match) so
-    //    "pan" correctly matches "Panadol", "Panado", etc.
+    // 4. Search across title, category, AND description
+    //    (regex search cannot use a normal index; keep it for admin/search screens only)
     if (search && search.trim()) {
       const sanitizedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
@@ -53,12 +60,24 @@ const getProducts = async (req, res) => {
       ];
     }
 
-    // 5. Execute Query with Pagination and Sort
-    const totalProducts = await Product.countDocuments(query);
-    const products = await Product.find(query)
-      .sort({ isMaryland: -1, createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // 5. Sort. No `sort` param keeps the previous default (Maryland first, then newest)
+    //    so other pages that call this endpoint behave exactly as before.
+    const sortBy = SORT_OPTIONS[sort] || SORT_OPTIONS.featured;
+
+    // Only apply the collation when it is actually needed, so plain queries use plain indexes
+    const needsCollation = typeof query.category === 'string' || sort === 'name';
+
+    const buildFind = () => {
+      const q = Product.find(query).sort(sortBy).skip(skip).limit(limit).lean();
+      return needsCollation ? q.collation(CI_COLLATION) : q;
+    };
+    const buildCount = () => {
+      const q = Product.countDocuments(query);
+      return needsCollation ? q.collation(CI_COLLATION) : q;
+    };
+
+    // 6. Run the page query and the count in parallel
+    const [products, totalProducts] = await Promise.all([buildFind(), buildCount()]);
 
     res.json({
       products,

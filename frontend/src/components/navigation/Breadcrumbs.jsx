@@ -5,6 +5,7 @@ import { useApp } from '../../context/AppContext';
 
 const LABELS = {
   category: { en: 'Category', ar: 'القسم' },
+  shop: { en: 'Shop', ar: 'المتجر' },
   product: { en: 'Product', ar: 'المنتج' },
   search: { en: 'Search', ar: 'البحث' },
   cart: { en: 'Cart', ar: 'السلة' },

@@ -1,19 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
-  ShoppingCart, AlertCircle, Loader2, ChevronRight, 
+  AlertCircle, Loader2, ChevronRight, 
   ShieldCheck, Truck, Clock, Award, Sparkles,
-  HeartPulse, Baby, Stethoscope, Pill, Apple, Star
 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-
 import { useApp } from '../../context/AppContext';
 import { useCart } from '../../context/CartContext';
 import api from '../../utils/axios';
 
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
-import PriceInquiryNotice from '../../components/PriceInquiryNotice';
+import CategoryBar from '../../components/navigation/CategoryBar';
+import ProductCard from '../../components/ProductCard';
 
 // Assets
 import HeroImg from '../../assets/hero.jpeg';
@@ -65,16 +63,6 @@ const Home = () => {
     fetchAllProducts();
     fetchMarylandProducts();
   }, [lang]);
-
-  const categories = useMemo(() => [
-    { id: 'beauty', label: { en: 'Beauty', ar: 'الجمال' }, icon: Sparkles, path: '/category/beauty' },
-    { id: 'personal', label: { en: 'Personal Care', ar: 'العناية الشخصية' }, icon: HeartPulse, path: '/category/personal-care' },
-    { id: 'baby', label: { en: 'Mom & Baby', ar: 'الأم والطفل' }, icon: Baby, path: '/category/mom-and-baby' },
-    { id: 'health', label: { en: 'Health Care', ar: 'الرعاية الصحية' }, icon: Stethoscope, path: '/category/health-care' },
-    { id: 'meds', label: { en: 'Medication', ar: 'الأدوية' }, icon: Pill, path: '/category/medication' },
-    { id: 'vitamins', label: { en: 'Vitamins', ar: 'الفيتامينات' }, icon: Apple, path: '/category/vitamins' },
-    { id: 'maryland', label: { en: 'Maryland', ar: 'ماريلاند' }, icon: Star, path: '/category/maryland-products' },
-  ], []);
 
   const randomBestSellers = useMemo(() => {
     if (!products || products.length === 0) return [];
@@ -210,54 +198,23 @@ const Home = () => {
       </section>
 
       {/* 3. CATEGORIES SECTION */}
-      <section className="py-16 mt-4 sm:mt-10 bg-slate-50/50">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center mb-10 text-center">
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0F172A] uppercase tracking-tighter">
-              {lang === 'en' ? 'Explore Our Categories' : 'استكشف أقسامنا'}
-            </h2>
-            <div className="h-1 w-12 bg-[#DC2626] rounded-full mt-2"></div>
-          </div>
-
-          <div
-            className="no-scrollbar snap-x snap-mandatory"
-            style={{ overflowX: 'auto', overflowY: 'visible' }}
-          >
-            <div className="flex gap-4 sm:gap-10 px-6 sm:px-8 py-8 justify-start sm:justify-center">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  to={cat.path}
-                  className="flex flex-col items-center gap-3 shrink-0 snap-center group"
-                >
-                  <div className="relative w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white flex items-center justify-center shadow-md ring-2 ring-slate-100 transition-all duration-300 ease-out group-hover:ring-[#DC2626]/50 group-hover:ring-[3px] group-hover:shadow-[0_8px_30px_rgba(220,38,38,0.18)] group-hover:scale-110 group-hover:-translate-y-1">
-                    <div className="absolute inset-0 rounded-full bg-[#DC2626] opacity-0 group-hover:opacity-[0.06] transition-opacity duration-300" />
-                    <cat.icon
-                      size={32}
-                      className="relative z-10 text-[#DC2626] transition-transform duration-300 group-hover:scale-110"
-                    />
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-black uppercase text-[#0F172A] tracking-tighter transition-colors duration-200 group-hover:text-[#DC2626] whitespace-nowrap">
-                    {cat.label[lang]}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <div className="mt-4 sm:mt-10">
+        <CategoryBar />
+      </div>
 
       <div className="container mx-auto px-3 sm:px-4 space-y-20 mt-16">
         {/* 4. MARYLAND SHOWCASE (Horizontal Touch-Scroll Carousel) */}
         <section className="space-y-6">
-          <div className="flex items-end justify-between px-1">
+          <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
             <h2 className="text-2xl sm:text-4xl font-black text-[#0F172A] uppercase tracking-tighter">
               {lang === 'en' ? 'Maryland Exclusive' : 'حصري ماريلاند'}
             </h2>
-            <Link to="/category/maryland-products" className="text-[#DC2626] font-bold text-xs sm:text-sm underline flex items-center gap-1 group">
+            <div className="flex shrink-0 items-center gap-2 self-end sm:gap-3">
+              <Link to="/category/maryland-products" className="text-[#DC2626] font-bold text-xs sm:text-sm underline flex items-center gap-1 group">
               {lang === 'en' ? 'View All' : 'عرض الكل'} 
-              <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
-            </Link>
+                <ChevronRight size={16} className={`transition-transform group-hover:translate-x-1 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+              </Link>
+            </div>
           </div>
           
           <div className="flex overflow-x-auto gap-3.5 sm:gap-6 pb-6 pt-1 no-scrollbar snap-x">
@@ -300,6 +257,17 @@ const Home = () => {
                 />
               </div>
             ))}
+          </div>
+
+          {/* See More -> full shop page */}
+          <div className="flex justify-center pt-4">
+            <Link
+              to="/shop"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#DC2626] px-6 py-3 text-sm font-bold text-[#DC2626] transition-all hover:bg-red-50"
+            >
+              {lang === 'en' ? 'See More' : 'عرض المزيد'}
+              <ChevronRight size={16} className={lang === 'ar' ? 'rotate-180' : ''} />
+            </Link>
           </div>
         </section>
 
@@ -348,76 +316,5 @@ const Home = () => {
     </div>
   );
 };
-
-// Perfectly unified Product Card used by both sections
-const ProductCard = ({ 
-  product, 
-  addToCart, 
-  navigate, 
-  lang, 
-  t, 
-  isNoticeOpen, 
-  onToggleNotice 
-}) => (
-  <div 
-    onClick={() => navigate(`/category/${product.category}/${product._id}`)} 
-    className="cursor-pointer group h-full flex flex-col select-none"
-  >
-    <GlassCard className="p-3 sm:p-4 flex flex-col justify-between h-full transition-all duration-300 hover:shadow-xl border-slate-100 bg-white rounded-2xl">
-      <div className="flex-1 flex flex-col">
-        {/* Responsive Aspect-Square Frame for Perfectly Matching Images */}
-        <div className="relative aspect-square w-full bg-white rounded-xl mb-3 flex items-center justify-center border border-slate-50 overflow-hidden shrink-0">
-          <img 
-            src={product.imageURL || product.image} 
-            alt={product.title} 
-            className="w-full h-full object-contain p-2 sm:p-3 transition-transform duration-500 group-hover:scale-105" 
-          />
-          {product.isMaryland && (
-            <div className="absolute top-2 left-2 bg-[#DC2626] text-white text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-black tracking-wider shadow-md">
-              MARYLAND
-            </div>
-          )}
-        </div>
-
-        {/* Constrained 2-line title */}
-        <h3 className="text-[11px] sm:text-xs md:text-sm font-black mb-1.5 text-[#0F172A] line-clamp-2 h-7 sm:h-9 uppercase group-hover:text-[#DC2626] transition-colors leading-tight">
-          {product.title}
-        </h3>
-        
-        {/* Coordinated Notice Accordion */}
-        <div className="mt-auto">
-          <PriceInquiryNotice 
-            product={product} 
-            compact={true} 
-            lang={lang} 
-            isOpen={isNoticeOpen}
-            onToggle={onToggleNotice}
-          />
-        </div>
-      </div>
-
-      {/* Cart CTA */}
-      <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
-        <SquircleButton 
-          variant="primary" 
-          fullWidth 
-          className="!py-2 sm:!py-2.5 !rounded-xl" 
-          onClick={(e) => { 
-            e.stopPropagation(); 
-            addToCart(product); 
-            toast.success(lang === 'en' ? 'Added to cart' : 'تم الإضافة للسلة'); 
-          }}
-        >
-          <div className="flex items-center justify-center gap-1.5">
-            <ShoppingCart size={15} />
-            <span className="uppercase text-[9px] sm:text-[10px] font-bold">
-              {t.cart || (lang === 'en' ? "Add" : "أضف")}
-            </span>
-          </div>
-        </SquircleButton>
-      </div>
-    </GlassCard>
-  </div>
-);
 
 export default Home;

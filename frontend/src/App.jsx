@@ -26,6 +26,7 @@ import ContactUs from './pages/client/ContactUs';
 import SearchPage from './pages/client/SearchPage';
 import MyOrders from './pages/client/MyOrders'; 
 import CategoryPage from './pages/client/CategoryPage';
+import Shop from './pages/client/Shop';
 import Profile from './pages/client/Profile'; // ✅ Added Profile Page
 
 // Admin Pages
@@ -115,6 +116,7 @@ const App = () => {
           <Route path="/forget-password" element={<ForgetPassword />} />
           <Route path="/reset-password/:resettoken" element={<ResetPassword />} />
           <Route path="/contact" element={<ContactUs />} />
+          <Route path="/shop" element={<Shop />} />
           
           {/* Category Page (Dynamic Slug) */}
           <Route path="/category/:slug" element={<CategoryPage />} />
