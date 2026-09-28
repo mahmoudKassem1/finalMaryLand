@@ -4,7 +4,7 @@
 
   <!-- Home Page -->
   <url>
-    <loc>https://marylandpharmacy.com/</loc>
+    <loc>https://www.marylandpharmacy.net/</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -12,7 +12,7 @@
 
   <!-- Shop All -->
   <url>
-    <loc>https://marylandpharmacy.com/shop</loc>
+    <loc>https://www.marylandpharmacy.net/shop</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -20,43 +20,43 @@
 
   <!-- Categories -->
   <url>
-    <loc>https://marylandpharmacy.com/category/maryland-products</loc>
+    <loc>https://www.marylandpharmacy.net/category/maryland-products</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://marylandpharmacy.com/category/beauty</loc>
+    <loc>https://www.marylandpharmacy.net/category/beauty</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://marylandpharmacy.com/category/medication</loc>
+    <loc>https://www.marylandpharmacy.net/category/medication</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://marylandpharmacy.com/category/health-care</loc>
+    <loc>https://www.marylandpharmacy.net/category/health-care</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://marylandpharmacy.com/category/personal-care</loc>
+    <loc>https://www.marylandpharmacy.net/category/personal-care</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://marylandpharmacy.com/category/mom-and-baby</loc>
+    <loc>https://www.marylandpharmacy.net/category/mom-and-baby</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://marylandpharmacy.com/category/vitamins</loc>
+    <loc>https://www.marylandpharmacy.net/category/vitamins</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -64,7 +64,7 @@
 
   <!-- Contact Us -->
   <url>
-    <loc>https://marylandpharmacy.com/contact</loc>
+    <loc>https://www.marylandpharmacy.net/contact</loc>
     <lastmod>2026-09-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
