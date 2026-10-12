@@ -53,7 +53,8 @@ const addOrderItems = async (req, res) => {
         product: dbProduct._id,
         name: dbProduct.title || dbProduct.name,
         image: dbProduct.image || dbProduct.imageURL || '',
-        qty: Number(item.quantity || item.qty || 1)
+        qty: Number(item.quantity || item.qty || 1),
+        price: Number(dbProduct.price)
       });
     }
 
@@ -123,7 +124,7 @@ const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate('user', 'name email phone')
-      .populate('orderItems.product', 'title image imageURL');
+      .populate('orderItems.product', 'title image imageURL price');
 
     if (order) {
       res.json(order);
@@ -140,7 +141,7 @@ const getMyOrders = async (req, res) => {
     const orders = await Order.find({ user: req.user._id })
       .populate({
         path: 'orderItems.product',
-        select: 'title image imageURL'
+        select: 'title image imageURL price'
       })
       .sort({ createdAt: -1 });
 
@@ -155,7 +156,7 @@ const getOrders = async (req, res) => {
   try {
     const orders = await Order.find({})
       .populate('user', 'name email phone')
-      .populate('orderItems.product', 'title image imageURL')
+      .populate('orderItems.product', 'title image imageURL price')
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {

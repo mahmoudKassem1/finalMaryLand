@@ -15,6 +15,7 @@ import { toast } from 'react-hot-toast';
 import api from '../../utils/axios';
 import Breadcrumbs from '../../components/navigation/Breadcrumbs';
 import BackButton from '../../components/navigation/BackButton';
+import { formatPrice, hasValidPrice } from '../../utils/formatPrice';
 
 const WHATSAPP_NUMBER = '201000076890';
 
@@ -34,13 +35,15 @@ const PAYMENT_INFO = {
 };
 
 const CheckoutContent = () => {
-  const { cartItems, checkout, clearCart, getCartCount } = useCart();
+  const { cartItems, checkout, clearCart, getCartCount, getCartTotal } = useCart();
   const { user, setUser } = useAuth(); 
   const { lang } = useApp();
   const navigate = useNavigate();
 
   const isAr = !lang || String(lang).toLowerCase().startsWith('ar');
   const totalUnits = typeof getCartCount === 'function' ? getCartCount() : cartItems.length;
+  const subtotal = getCartTotal();
+  const hasAllPrices = cartItems.every((item) => hasValidPrice(item.price));
 
   // --- STATE ---
   const [addresses, setAddresses] = useState([]);
@@ -159,63 +162,36 @@ const CheckoutContent = () => {
 
   // --- 3. WHATSAPP DOSSIER GENERATOR ---
   const generateWhatsAppMessage = (orderId, addr) => {
-    const itemsList = cartItems
-      .map((item, index) => `  ${index + 1}. *${item.title}* × ${item.quantity || 1}`)
-      .join('\n');
-
+    const itemsList = cartItems.map((item, index) => {
+      const quantity = Number(item.quantity) || 1;
+      if (!hasValidPrice(item.price)) {
+        return `${index + 1}. *${item.title}* × ${quantity} — ${isAr ? 'السعر غير متاح' : 'Price unavailable'}`;
+      }
+      const lineTotal = item.price * quantity;
+      return `${index + 1}. *${item.title}* — ${quantity} × ${formatPrice(item.price, lang)} = ${formatPrice(lineTotal, lang)}`;
+    }).join('\n');
+    const subtotalText = hasAllPrices
+      ? formatPrice(subtotal, lang)
+      : (isAr ? 'السعر غير متاح' : 'Price unavailable');
     const paymentLabel = {
       CashOnDelivery: isAr ? 'الدفع نقداً عند الاستلام' : 'Cash on Delivery',
-      InstaPay: isAr ? 'تحويل انستا باي (InstaPay)' : 'InstaPay Transfer',
-      VodafoneCash: isAr ? 'فودافون كاش (Vodafone Cash)' : 'Vodafone Cash'
+      InstaPay: isAr ? 'تحويل إنستا باي (InstaPay)' : 'InstaPay Transfer',
+      VodafoneCash: isAr ? 'فودافون كاش (Vodafone Cash)' : 'Vodafone Cash',
     }[paymentMethod] || paymentMethod;
-    
-    if (isAr) {
-      return encodeURIComponent(
-`*طلب واستفسار جديد - صيدلية ماريلاند* 🏥
-رقم المرجع: #${String(orderId).slice(-6).toUpperCase()}
 
-👤 *بيانات العميل:*
-• الاسم: ${user?.name || 'عميل ماريلاند'}
-• الهاتف: ${user?.phone || 'غير مسجل'}
+    const message = isAr
+      ? `*طلب جديد - صيدلية ماريلاند* 🏥\nرقم الطلب: #${String(orderId).slice(-6).toUpperCase()}\n\n*بيانات العميل*\nالاسم: ${user?.name || 'عميل ماريلاند'}\nالهاتف: ${user?.phone || 'غير مسجل'}\n\n*عنوان التوصيل*\nالشارع: ${addr.street}\nالمبنى/الشقة: ${addr.aptNumber}\nالمدينة: ${addr.city || 'الإسكندرية'}\n\n*طريقة الدفع:* ${paymentLabel}\n${notes.trim() ? `*ملاحظات:* ${notes.trim()}\n` : ''}\n*المنتجات*\n${itemsList}\n\n*المجموع الفرعي للمنتجات (بدون التوصيل):* ${subtotalText}\nرسوم التوصيل: تُحدد وتُضاف بعد إرسال الطلب حسب المنطقة.\nبرجاء تأكيد التوفر ورسوم التوصيل النهائية. شكراً لكم!`
+      : `*New Order - Maryland Pharmacy* 🏥\nOrder reference: #${String(orderId).slice(-6).toUpperCase()}\n\n*Customer*\nName: ${user?.name || 'Customer'}\nPhone: ${user?.phone || 'N/A'}\n\n*Delivery Address*\nStreet: ${addr.street}\nBuilding/Apt: ${addr.aptNumber}\nCity: ${addr.city || 'Alexandria'}\n\n*Payment method:* ${paymentLabel}\n${notes.trim() ? `*Notes:* ${notes.trim()}\n` : ''}\n*Products*\n${itemsList}\n\n*Product subtotal (delivery not included):* ${subtotalText}\nDelivery fee: to be confirmed and added after order submission based on your area.\nPlease confirm stock and the final delivery fee. Thank you!`;
 
-📍 *عنوان التوصيل:*
-• الشارع: ${addr.street}
-• المبنى/الشقة: ${addr.aptNumber}
-• المدينة: الإسكندرية
-
-💳 *طريقة الدفع المختارة:* ${paymentLabel}
-${notes.trim() ? `📝 *ملاحظات العميل:* ${notes.trim()}\n` : ''}
-📦 *الأصناف المطلوبة:*
-${itemsList}
-
-يرجى تزويدي بالسعر الإجمالي وتأكيد التوصيل. شكراً لكم!`
-      );
-    }
-
-    return encodeURIComponent(
-`*New Order Request - Maryland Pharmacy* 🏥
-Reference: #${String(orderId).slice(-6).toUpperCase()}
-
-👤 *Customer Info:*
-• Name: ${user?.name || 'Customer'}
-• Phone: ${user?.phone || 'N/A'}
-
-📍 *Delivery Address:*
-• Street: ${addr.street}
-• Building/Apt: ${addr.aptNumber}
-• City: Alexandria
-
-💳 *Payment Preference:* ${paymentLabel}
-${notes.trim() ? `📝 *Notes:* ${notes.trim()}\n` : ''}
-📦 *Requested Items:*
-${itemsList}
-
-Please verify current total price and delivery schedule. Thank you!`
-    );
+    return encodeURIComponent(message);
   };
 
   // --- 4. PLACE ORDER & DISPATCH ---
   const handlePlaceOrder = async () => {
+    if (!hasAllPrices) {
+      toast.error(isAr ? 'يرجى الانتظار حتى يتم تحميل أسعار المنتجات.' : 'Please wait for product prices to load.');
+      return;
+    }
     const selectedAddr = addresses.find(a => a._id === selectedAddrId);
     if (!selectedAddr) {
       toast.error(isAr ? 'يرجى اختيار عنوان التوصيل' : 'Please select a delivery address');
@@ -394,9 +370,9 @@ Please verify current total price and delivery schedule. Thank you!`
                 {isAr ? 'اضغط "تأكيد الطلب" — سيفتح واتساب' : 'Tap "Confirm Order" — WhatsApp will open'}
               </p>
               <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
-                {isAr 
-                  ? 'يراجع الصيدلي طلبك ويخبرك بالسعر النهائي + رسوم التوصيل حسب منطقتك' 
-                  : 'The pharmacist checks your order and tells you the final price + delivery fee for your area'}
+                {isAr
+                  ? 'الأسعار موضحة لكل منتج. سيؤكد الصيدلي التوفر ورسوم التوصيل حسب منطقتك عبر واتساب.'
+                  : 'Product prices are shown below. The pharmacist will confirm availability and your area delivery fee on WhatsApp.'}
               </p>
             </div>
           </div>
@@ -442,8 +418,8 @@ Please verify current total price and delivery schedule. Thank you!`
                       : 'Pay cash to the courier at your door when the order arrives — nothing else to do')
                   : paymentMethod
                     ? (isAr 
-                        ? 'بعد اتفاقك مع الصيدلي على السعر في واتساب، ارجع هنا لتنفيذ التحويل، ثم أرسل صورة الإيصال في نفس محادثة الواتساب' 
-                        : 'After the pharmacist confirms the price on WhatsApp, return to this page to finish the transfer, then send the receipt screenshot back on WhatsApp')
+                        ? 'بعد تأكيد التوفر ورسوم التوصيل مع الصيدلي عبر واتساب، ارجع هنا لتنفيذ التحويل، ثم أرسل صورة الإيصال في نفس المحادثة.'
+                        : 'After the pharmacy confirms availability and the delivery fee on WhatsApp, return here to transfer, then send the receipt screenshot in the same chat.')
                     : (isAr ? 'توصيل سريع لباب منزلك بالإسكندرية' : 'Doorstep delivery with receipt across Alexandria')}
               </p>
             </div>
@@ -458,8 +434,8 @@ Please verify current total price and delivery schedule. Thank you!`
           </div>
           <p className="text-xs sm:text-sm font-bold text-blue-950 leading-snug">
             {isAr 
-              ? '🚚 هام: رسوم التوصيل تختلف حسب منطقتك داخل الإسكندرية، وسيخبرك بها الصيدلي بالتحديد على واتساب مع السعر الإجمالي.' 
-              : '🚚 Important: The delivery fee depends on your area within Alexandria and will be confirmed by the pharmacist on WhatsApp along with your total price.'}
+              ? '🚚 رسوم التوصيل غير مشمولة في مجموع المنتجات، وسيتم تحديدها وإضافتها بعد إرسال الطلب عبر واتساب حسب منطقتك.'
+              : '🚚 Delivery is not included in the product subtotal. The pharmacy will confirm and add the area-based delivery fee after you submit the order on WhatsApp.'}
           </p>
         </div>
       </div>
@@ -751,8 +727,8 @@ Please verify current total price and delivery schedule. Thank you!`
                 </p>
                 <p className="font-medium text-emerald-900/90 text-xs">
                   {isAr 
-                    ? 'ستدفع المبلغ نقداً لمندوب الصيدلية فور استلام الأدوية وفحصها عند باب منزلك. سيخبرك الصيدلي بإجمالي الفاتورة (شامل رسوم التوصيل حسب منطقتك) بدقة على واتساب.' 
-                    : 'Pay the exact cash to the courier upon delivery at your door. The pharmacist will tell you the exact total — including the delivery fee for your area — over WhatsApp.'}
+                    ? 'سيتم تأكيد المبلغ النهائي شامل رسوم التوصيل عبر واتساب، ثم تدفع نقداً للمندوب عند الاستلام.'
+                    : 'The final amount, including delivery, will be confirmed on WhatsApp. Pay the courier in cash when your order arrives.'}
                 </p>
               </div>
             )}
@@ -772,8 +748,8 @@ Please verify current total price and delivery schedule. Thank you!`
                     <span className="w-5 h-5 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">1</span>
                     <p className="text-slate-800 font-medium">
                       {isAr 
-                        ? 'تواصل مع الصيدلي في محادثة واتساب لمعرفة إجمالي الفاتورة النهائي + رسوم التوصيل حسب منطقتك.' 
-                        : 'Chat with the pharmacist on WhatsApp to confirm the final order price + delivery fee for your area.'}
+                        ? 'رسوم التوصيل ستُضاف إلى مجموع المنتجات بعد تأكيدها مع الصيدلي عبر واتساب.'
+                        : 'The delivery fee will be added to the product subtotal after the pharmacy confirms it on WhatsApp.'}
                     </p>
                   </div>
 
@@ -851,7 +827,7 @@ Please verify current total price and delivery schedule. Thank you!`
 
                 <div className="p-2.5 rounded-xl bg-purple-100/70 text-[11px] font-bold text-purple-900 flex items-center gap-2">
                   <HelpCircle size={15} className="shrink-0 text-purple-700" />
-                  <span>{isAr ? 'تنبيه: لا تقم بالتحويل الآن! انتظر حتى يؤكد الصيدلي معك إجمالي السعر أولاً.' : 'Notice: Do not transfer now! Confirm the exact total with the pharmacist first.'}</span>
+                  <span>{isAr ? 'لا تحوّل قبل تأكيد رسوم التوصيل والمبلغ النهائي مع الصيدلي عبر واتساب.' : 'Wait for the pharmacy to confirm the delivery fee and final amount on WhatsApp before transferring.'}</span>
                 </div>
               </div>
             )}
@@ -871,8 +847,8 @@ Please verify current total price and delivery schedule. Thank you!`
                     <span className="w-5 h-5 rounded-full bg-[#DC2626] text-white font-black flex items-center justify-center text-[11px] shrink-0 mt-0.5">1</span>
                     <p className="text-slate-800 font-medium">
                       {isAr 
-                        ? 'أرسل الطلب للصيدلي على واتساب لمعرفة السعر الإجمالي بدقة + رسوم التوصيل حسب منطقتك، والتأكد من توافر الأصناف.' 
-                        : 'Send the order to the pharmacist via WhatsApp to verify total price, delivery fee for your area, and stock.'}
+                        ? 'راجع أسعار المنتجات، وسيتم تأكيد التوفر ورسوم التوصيل المضافة عبر واتساب قبل التحويل.'
+                        : 'Review the product prices. Confirm availability and the added delivery fee on WhatsApp before transferring.'}
                     </p>
                   </div>
 
@@ -933,7 +909,7 @@ Please verify current total price and delivery schedule. Thank you!`
 
                 <div className="p-2.5 rounded-xl bg-red-100/70 text-[11px] font-bold text-red-950 flex items-center gap-2">
                   <HelpCircle size={15} className="shrink-0 text-[#DC2626]" />
-                  <span>{isAr ? 'تنبيه: لا تقم بالتحويل الآن! انتظر رسالة الصيدلي أولاً لتحديد المبلغ.' : 'Notice: Do not transfer now! Wait for the pharmacist message to know the total.'}</span>
+                  <span>{isAr ? 'انتظر تأكيد رسوم التوصيل والمبلغ النهائي من الصيدلي قبل التحويل.' : 'Wait for the pharmacist to confirm the delivery fee and final amount before transferring.'}</span>
                 </div>
               </div>
             )}
@@ -954,12 +930,23 @@ Please verify current total price and delivery schedule. Thank you!`
             <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
               {cartItems.map((item) => (
                 <div key={item._id} className="flex justify-between items-center text-xs font-bold text-slate-700 py-1 border-b border-slate-50">
-                  <span className="truncate max-w-[170px]">{item.title}</span>
-                  <span className="text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md shrink-0">
-                    ×{item.quantity || 1}
+                  <span className="min-w-0 truncate max-w-[170px]">{item.title}</span>
+                  <span className="shrink-0 text-end text-slate-500">
+                    ×{item.quantity || 1} · {hasValidPrice(item.price) ? formatPrice(item.price * (item.quantity || 1), lang) : (isAr ? 'غير متاح' : 'Unavailable')}
                   </span>
                 </div>
               ))}
+            </div>
+
+            <div className="space-y-2 border-t border-slate-100 pt-3">
+              <div className="flex justify-between gap-3 text-sm font-bold text-slate-700">
+                <span>{isAr ? 'المجموع الفرعي للمنتجات' : 'Product subtotal'}</span>
+                <span className="font-black text-slate-900">{hasAllPrices ? formatPrice(subtotal, lang) : (isAr ? 'غير متاح' : 'Unavailable')}</span>
+              </div>
+              <div className="flex justify-between gap-3 text-xs text-slate-500">
+                <span>{isAr ? 'رسوم التوصيل' : 'Delivery fee'}</span>
+                <span>{isAr ? 'تُحدد بعد إرسال الطلب' : 'Confirmed after submission'}</span>
+              </div>
             </div>
 
             {/* Selected Payment Tag in Summary */}

@@ -3,7 +3,7 @@ import { ShoppingCart } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import GlassCard from './ui/GlassCard';
 import SquircleButton from './ui/SquircleButton';
-import PriceInquiryNotice from './PriceInquiryNotice';
+import { formatPrice, hasValidPrice } from '../utils/formatPrice';
 
 const ProductCard = ({
   product,
@@ -11,8 +11,6 @@ const ProductCard = ({
   navigate,
   lang,
   t,
-  isNoticeOpen,
-  onToggleNotice,
 }) => (
   <div
     onClick={() => navigate(`/category/${product.category}/${product._id}`)}
@@ -50,13 +48,12 @@ const ProductCard = ({
           {product.title}
         </h3>
         <div className="mt-auto">
-          <PriceInquiryNotice
-            product={product}
-            compact={true}
-            lang={lang}
-            isOpen={isNoticeOpen}
-            onToggle={onToggleNotice}
-          />
+          <div className="mt-2 flex items-baseline justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-500">{lang === 'en' ? 'Price' : 'السعر'}</span>
+            <span className="text-sm sm:text-base font-black text-[#DC2626]" dir="auto">
+              {hasValidPrice(product.price) ? formatPrice(product.price, lang) : (lang === 'en' ? 'Price unavailable' : 'السعر غير متاح')}
+            </span>
+          </div>
         </div>
       </div>
 

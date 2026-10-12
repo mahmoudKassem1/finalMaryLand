@@ -9,7 +9,7 @@ import { useApp } from '../../context/AppContext';
 
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
-import PriceInquiryNotice from '../../components/PriceInquiryNotice';
+import { formatPrice, hasValidPrice } from '../../utils/formatPrice';
 import Breadcrumbs from '../../components/navigation/Breadcrumbs';
 import BackButton from '../../components/navigation/BackButton';
 
@@ -166,7 +166,9 @@ const CategoryPage = () => {
                     </div>
 
                     <h3 className="text-lg font-black text-[#0F172A] line-clamp-2 mb-2">{product.title}</h3>
-                    <PriceInquiryNotice compact={true} lang="ar" />
+                    <p className="text-lg font-black text-[#DC2626]" dir="auto">
+                      {hasValidPrice(product.price) ? formatPrice(product.price, lang) : (lang === 'en' ? 'Price unavailable' : 'السعر غير متاح')}
+                    </p>
                   </div>
 
                   <div className="mt-4" onClick={(e) => e.stopPropagation()}>

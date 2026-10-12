@@ -12,6 +12,8 @@ const orderSchema = mongoose.Schema(
       {
         name: { type: String, required: true },
         qty: { type: Number, required: true },
+        // Snapshot the unit price so order history remains accurate after catalog edits.
+        price: { type: Number, min: 0 },
         image: { type: String, required: true },
         product: {
           type: mongoose.Schema.Types.ObjectId,

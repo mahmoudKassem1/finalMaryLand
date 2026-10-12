@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 
 import GlassCard from '../../components/ui/GlassCard';
 import SquircleButton from '../../components/ui/SquircleButton';
-import PriceInquiryNotice from '../../components/PriceInquiryNotice';
+import { formatPrice, hasValidPrice } from '../../utils/formatPrice';
 import Breadcrumbs from '../../components/navigation/Breadcrumbs';
 import BackButton from '../../components/navigation/BackButton';
 import { useCart } from '../../context/CartContext';
@@ -161,7 +161,12 @@ const ProductDetails = () => {
             <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black mt-4 sm:mt-6 text-[#0F172A] leading-tight break-words">
               {product.title}
             </h1>
-            <PriceInquiryNotice product={product} compact={false} lang={isAr ? 'ar' : 'en'} />
+            <div className="mt-4 rounded-2xl border border-red-100 bg-red-50/70 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{lang === 'en' ? 'Price' : 'السعر'}</p>
+              <p className="mt-1 text-2xl font-black text-[#DC2626]" dir="auto">
+                {hasValidPrice(product.price) ? formatPrice(product.price, lang) : (lang === 'en' ? 'Price unavailable' : 'السعر غير متاح')}
+              </p>
+            </div>
           </div>
 
           <div className="prose prose-slate max-w-none">

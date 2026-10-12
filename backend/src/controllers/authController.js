@@ -100,16 +100,14 @@ const forgetPassword = async (req, res) => {
 
     await user.save();
 
-    // ✅ FIX: Use FRONTEND_URL (React) instead of localhost:3000
-    // If process.env.FRONTEND_URL is not set, it defaults to http://localhost:5173
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://www.marylandpharmacy.net';
     const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
     
     // Simple text message (The HTML template handles the styling now)
     const message = `You have requested a password reset for your Maryland Pharmacy account. Please click the button below to set a new password.`;
 
     try {
-      await sendEmail({
+      const emailResult = await sendEmail({
         email: user.email,
         subject: 'Password Reset Request',
         message: message,     // Passed to the utility
@@ -117,9 +115,19 @@ const forgetPassword = async (req, res) => {
         ctaUrl: resetUrl      // ✅ Button Link (This triggers the red button in the email)
       });
 
+      if (!emailResult.success) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save();
+
+        return res.status(502).json({
+          message: emailResult.error || 'Email could not be sent',
+        });
+      }
+
       res.status(200).json({ success: true, data: 'Email sent successfully' });
     } catch (error) {
-      console.error("❌ Nodemailer Error:", error);
+      console.error('Password reset email failed:', error.message);
       
       // Rollback changes if email fails
       user.resetPasswordToken = undefined;

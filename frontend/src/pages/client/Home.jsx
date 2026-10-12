@@ -30,12 +30,6 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Single active accordion ID across the whole page
-  const [openNoticeProductId, setOpenNoticeProductId] = useState(null);
-
-  const handleToggleNotice = (productId) => {
-    setOpenNoticeProductId((prevId) => (prevId === productId ? null : productId));
-  };
 
   useEffect(() => {
     const fetchAllProducts = async () => {
@@ -226,8 +220,6 @@ const Home = () => {
                   navigate={navigate} 
                   lang={lang} 
                   t={t}
-                  isNoticeOpen={openNoticeProductId === product._id}
-                  onToggleNotice={() => handleToggleNotice(product._id)}
                 />
               </div>
             ))}
@@ -252,8 +244,6 @@ const Home = () => {
                   navigate={navigate} 
                   lang={lang} 
                   t={t}
-                  isNoticeOpen={openNoticeProductId === product._id}
-                  onToggleNotice={() => handleToggleNotice(product._id)}
                 />
               </div>
             ))}

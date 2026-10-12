@@ -48,7 +48,6 @@ const Shop = () => {
   const [sort, setSort] = useState('latest');
   const [currentPage, setCurrentPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
-  const [openNoticeProductId, setOpenNoticeProductId] = useState(null);
 
   // Fetch ONLY the current page from the server
   useEffect(() => {
@@ -97,7 +96,6 @@ const Shop = () => {
   const handlePageChange = (page) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
     setCurrentPage(page);
-    setOpenNoticeProductId(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -185,8 +183,6 @@ const Shop = () => {
                   navigate={navigate}
                   lang={lang}
                   t={t}
-                  isNoticeOpen={openNoticeProductId === product._id}
-                  onToggleNotice={() => setOpenNoticeProductId((current) => current === product._id ? null : product._id)}
                 />
               ))}
             </div>
