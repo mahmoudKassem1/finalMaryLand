@@ -27,7 +27,8 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (userData: { name: string; email: string; password: string; phone?: string }) => Promise<void>;
+  startSignup: (userData: { name: string; email: string; password: string; phone?: string; street?: string; aptNumber?: string; city?: string; phoneConfirmed: boolean }) => Promise<void>;
+  verifySignup: (email: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -103,8 +104,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await fetchProfile();
   };
 
-  const signup = async (userData: { name: string; email: string; password: string; phone?: string }) => {
-    const response = await apiClient.post('/auth/signup', userData);
+  const startSignup = async (userData: { name: string; email: string; password: string; phone?: string; street?: string; aptNumber?: string; city?: string; phoneConfirmed: boolean }) => {
+    await apiClient.post('/auth/signup', userData);
+  };
+
+  const verifySignup = async (email: string, otp: string) => {
+    const response = await apiClient.post('/auth/signup/verify', { email, otp });
     const { token: receivedToken } = response.data;
     await saveToken(receivedToken);
     apiClient.defaults.headers.common.Authorization = `Bearer ${receivedToken}`;
@@ -124,7 +129,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         token,
         isLoading,
         login,
-        signup,
+        startSignup,
+        verifySignup,
         logout,
         refreshProfile: fetchProfile,
       }}

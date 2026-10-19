@@ -2,6 +2,51 @@ const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const PendingRegistration = require('../models/PendingRegistration');
+
+const hashOtp = (otp) => crypto.createHash('sha256').update(otp).digest('hex');
+
+const startRegistration = async (req, res) => {
+  try {
+    const { name, email, password, phone, gender, street, aptNumber, city, phoneConfirmed } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!name?.trim() || !/^\S+@\S+\.\S+$/.test(normalizedEmail) || !password || password.length < 6 || phoneConfirmed !== true) {
+      return res.status(400).json({ message: 'Enter valid details, use a password of at least 6 characters, and confirm your phone number.' });
+    }
+    if (await User.exists({ email: normalizedEmail })) return res.status(409).json({ message: 'User already exists' });
+    const otp = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
+    const [passwordHash] = await Promise.all([bcrypt.hash(password, 10)]);
+    await PendingRegistration.findOneAndUpdate({ email: normalizedEmail }, {
+      name: name.trim(), passwordHash, phone: phone || '', gender, street, aptNumber, city: city || 'Alexandria', phoneConfirmed: true,
+      otpHash: hashOtp(otp), otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000), attempts: 0, createdAt: new Date(),
+    }, { upsert: true, new: true, setDefaultsOnInsert: true });
+    const html = `<div dir="auto" style="font-family:Arial,sans-serif;text-align:center"><h2>Verify your email / تأكيد بريدك الإلكتروني</h2><p>Your Maryland Pharmacy verification code / رمز التحقق الخاص بك:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px">${otp}</p><p>This code expires in 10 minutes. If you did not request it, ignore this email.</p><p dir="rtl">تنتهي صلاحية هذا الرمز خلال ١٠ دقائق. إذا لم تطلبه، فتجاهل هذه الرسالة.</p></div>`;
+    const sent = await sendEmail({ email: normalizedEmail, subject: 'Verify your Maryland Pharmacy account | تأكيد حسابك', html });
+    if (!sent.success) { await PendingRegistration.deleteOne({ email: normalizedEmail }); return res.status(502).json({ message: 'Verification email could not be sent. Please try again.' }); }
+    return res.status(200).json({ success: true, message: 'Verification code sent' });
+  } catch (error) { return res.status(500).json({ message: 'Could not start registration' }); }
+};
+
+const verifyRegistration = async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const otp = String(req.body.otp || '').trim();
+    const pending = await PendingRegistration.findOne({ email });
+    if (!pending || pending.otpExpiresAt <= new Date() || pending.attempts >= 5) return res.status(400).json({ message: 'Code expired or invalid. Please request a new one.' });
+    if (!/^\d{6}$/.test(otp) || !crypto.timingSafeEqual(Buffer.from(pending.otpHash), Buffer.from(hashOtp(otp)))) {
+      pending.attempts += 1; await pending.save();
+      return res.status(400).json({ message: 'Incorrect verification code' });
+    }
+    const initialAddress = { street: pending.street || '', aptNumber: pending.aptNumber || '', city: pending.city || 'Alexandria', phone: pending.phone, isDefault: true };
+    const user = new User({ name: pending.name, email: pending.email, password: pending.passwordHash, phone: pending.phone, gender: pending.gender, address: initialAddress, addresses: [initialAddress], emailVerified: true, phoneConfirmed: pending.phoneConfirmed });
+    user.password = pending.passwordHash;
+    user.$isNew = false;
+    await User.collection.insertOne(user.toObject());
+    await PendingRegistration.deleteOne({ _id: pending._id });
+    return res.status(201).json({ _id: user._id, name: user.name, email: user.email, phone: user.phone, addresses: user.addresses, address: user.address, role: user.role, token: generateToken(user._id) });
+  } catch (error) { return res.status(500).json({ message: 'Could not verify email' }); }
+};
 
 // @desc    Register a new user
 // @route   POST /api/auth/signup
@@ -177,4 +222,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, forgetPassword, resetPassword };
+module.exports = { registerUser, loginUser, forgetPassword, resetPassword, startRegistration, verifyRegistration };

@@ -1,9 +1,9 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
 // 1. Import ALL Controller Functions (Auth + Profile + Address)
 const { 
-  registerUser, 
   authUser, 
   getUserProfile, 
   updateUserProfile,
@@ -14,11 +14,15 @@ const {
 
 // 2. Import Middleware
 const { protect } = require('../middleware/authMiddleware');
+const { startRegistration, verifyRegistration } = require('../controllers/authController');
+const registrationStartLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
+const registrationVerifyLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false });
 
 // --- AUTHENTICATION ROUTES ---
 
 // Register: POST /api/users/register
-router.post('/register', registerUser);
+router.post('/register', registrationStartLimit, startRegistration);
+router.post('/register/verify', registrationVerifyLimit, verifyRegistration);
 
 // Login: POST /api/users/login
 router.post('/login', authUser);

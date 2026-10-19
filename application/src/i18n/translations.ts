@@ -63,6 +63,7 @@ export const translations = {
       registrationFailed: 'Registration Failed',
       registrationError: 'Unable to complete registration. Please check your data.',
       registerAccount: 'Register Account',
+      phoneConfirmTitle: 'Confirm your phone number', phoneConfirmRequired: 'Please confirm this is your real phone number and we can reach you for delivery and order updates.', verifyEmail: 'Verify email',
       alreadyRegistered: 'Already registered?',
       selectAreaTitle: 'Select Area',
       forgotSubtitle: 'Enter your account email and we’ll send you a link to reset your password.',
@@ -286,6 +287,7 @@ export const translations = {
       registrationFailed: 'فشل إنشاء الحساب',
       registrationError: 'تعذر إكمال التسجيل. يرجى مراجعة بياناتك.',
       registerAccount: 'إنشاء الحساب',
+      phoneConfirmTitle: 'تأكيد رقم الهاتف', phoneConfirmRequired: 'يرجى تأكيد أن هذا رقم هاتفك الحقيقي ويمكننا التواصل معك بخصوص التوصيل وتحديثات الطلب.', verifyEmail: 'تأكيد البريد الإلكتروني',
       alreadyRegistered: 'لديك حساب بالفعل؟',
       selectAreaTitle: 'اختر المنطقة',
       forgotSubtitle: 'أدخل البريد الإلكتروني لحسابك وسنرسل إليك رابطاً لإعادة تعيين كلمة المرور.',
@@ -466,6 +468,7 @@ export type TranslationPath =
   | 'auth.fillRequired' | 'auth.invalidPhone' | 'auth.weakPassword' | 'auth.passwordLength'
   | 'auth.accountCreated' | 'auth.addressSavedWelcome' | 'auth.registrationFailed' | 'auth.registrationError'
   | 'auth.registerAccount' | 'auth.alreadyRegistered' | 'auth.selectAreaTitle' | 'auth.forgotSubtitle'
+  | 'auth.phoneConfirmTitle' | 'auth.phoneConfirmRequired' | 'auth.verifyEmail'
   | 'auth.emailRequired' | 'auth.resetEmailRequired' | 'auth.checkEmail' | 'auth.resetEmailSent'
   | 'auth.unableToSendReset' | 'auth.connectionRetry' | 'auth.sendResetLink' | 'auth.backToSignIn'
   | 'nav.home' | 'nav.categories' | 'nav.search' | 'nav.cart' | 'nav.profile'

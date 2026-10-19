@@ -50,20 +50,22 @@ export const AuthProvider = ({ children }) => {
   // 3. Register Function (FIXED)
   const register = async (userData) => {
     try {
-      // ✅ We send 'userData' directly. Do NOT wrap it in { }
-      const { data } = await api.post('/users/register', userData);
-      
+      await api.post('/users/register', userData);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.message || "Registration failed" };
+    }
+  };
+
+  const verifyRegistration = async (email, otp) => {
+    try {
+      const { data } = await api.post('/users/register/verify', { email, otp });
       localStorage.setItem('userInfo', JSON.stringify(data));
       localStorage.setItem('token', data.token);
-      
       setUser(data);
       return { success: true };
     } catch (error) {
-      console.error("Registration Failed:", error.response?.data?.message);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || "Registration failed" 
-      };
+      return { success: false, error: error.response?.data?.message || "Verification failed" };
     }
   };
 
@@ -77,7 +79,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, verifyRegistration, logout, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

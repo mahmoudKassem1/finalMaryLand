@@ -38,7 +38,7 @@ const areaSections = rawAreaJSON.map(d => ({
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { startSignup, verifySignup } = useAuth();
   const { isRTL, t } = useLanguage();
 
   // Personal Info State
@@ -58,6 +58,9 @@ export default function RegisterScreen() {
   const [isAreaModalVisible, setAreaModalVisible] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [phoneConfirmed, setPhoneConfirmed] = useState(false);
+  const [verificationPending, setVerificationPending] = useState(false);
+  const [otp, setOtp] = useState('');
 
   // Smart Validation for Egyptian Numbers
   const validatePhone = (val: string) => {
@@ -73,6 +76,12 @@ export default function RegisterScreen() {
   };
 
   const handleSignup = async () => {
+    if (verificationPending) {
+      try { setLoading(true); await verifySignup(email.trim().toLowerCase(), otp); Alert.alert(t('auth.accountCreated'), t('auth.addressSavedWelcome'), [{ text: t('common.continue'), onPress: () => router.replace('/(tabs)') }]); }
+      catch (err: any) { Alert.alert(t('auth.registrationFailed'), err?.response?.data?.message || t('auth.registrationError')); }
+      finally { setLoading(false); }
+      return;
+    }
     // 1. Validate Form
     if (!name.trim() || !email.trim() || !password || !phone.trim() || !street.trim() || !building.trim() || !selectedArea) {
       Alert.alert(t('auth.missingFields'), t('auth.fillRequired'));
@@ -82,6 +91,7 @@ export default function RegisterScreen() {
       Alert.alert(t('auth.invalidPhone'), t('auth.invalidPhone'));
       return;
     }
+    if (!phoneConfirmed) { Alert.alert(t('auth.phoneConfirmTitle'), t('auth.phoneConfirmRequired')); return; }
     if (password.length < 6) {
       Alert.alert(t('auth.weakPassword'), t('auth.passwordLength'));
       return;
@@ -104,17 +114,9 @@ export default function RegisterScreen() {
             aptNumber: apt.trim() || 'N/A',
         };
 
-      await signup(payload);
+      await startSignup({ ...payload, phoneConfirmed: true });
+      setVerificationPending(true);
 
-      Alert.alert(t('auth.accountCreated'), t('auth.addressSavedWelcome'), [
-        {
-          text: t('common.continue'),
-          onPress: () => {
-            if (router.canGoBack()) router.back();
-            else router.replace('/(tabs)');
-          },
-        },
-      ]);
     } catch (err: any) {
       const errorMsg = err?.response?.data?.message || t('auth.registrationError');
       Alert.alert(t('auth.registrationFailed'), errorMsg);
@@ -141,6 +143,7 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.card}>
+            {verificationPending ? <View style={{ alignItems: 'center', paddingVertical: 18 }}><Ionicons name="mail-unread-outline" size={36} color={Colors.primary} /><Text style={[styles.subtitle, isRTL && styles.textRTL]}>{isRTL ? `أدخل الرمز المرسل إلى ${email}. صالح لمدة ١٠ دقائق.` : `Enter the code sent to ${email}. It expires in 10 minutes.`}</Text><TextInput style={styles.otpInput} value={otp} onChangeText={v => setOtp(v.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" maxLength={6} autoComplete="one-time-code" placeholder="000000" /></View> : <>
             {/* --- PERSONAL INFO SECTION --- */}
             <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>١. {t('auth.personalInformation')}</Text>
 
@@ -184,6 +187,7 @@ export default function RegisterScreen() {
               />
             </View>
             {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+            <Pressable style={styles.consentRow} onPress={() => setPhoneConfirmed(v => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: phoneConfirmed }}><Ionicons name={phoneConfirmed ? 'checkbox' : 'square-outline'} size={22} color={phoneConfirmed ? Colors.primary : Colors.secondary} /><Text style={[styles.consentText, isRTL && styles.textRTL]}>{isRTL ? 'أؤكد أن هذا رقم هاتفي الحقيقي ويمكن التواصل معي بسهولة بخصوص التوصيل وتحديثات الطلب.' : 'I confirm this is my real phone number and that I can be reached easily for delivery and order updates.'}</Text></Pressable>
 
             <Text style={[styles.inputLabel, isRTL && styles.textRTL]}>{t('auth.password')} *</Text>
             <View style={styles.inputWrapper}>
@@ -271,6 +275,7 @@ export default function RegisterScreen() {
               />
             </View>
 
+            </>}
             {/* Submit */}
             <Pressable
               style={[styles.primaryButton, loading && styles.buttonDisabled]}
@@ -281,7 +286,7 @@ export default function RegisterScreen() {
               {loading ? (
                 <ActivityIndicator color={Colors.surface} />
               ) : (
-                <Text style={styles.primaryButtonText}>{t('auth.registerAccount')}</Text>
+                <Text style={styles.primaryButtonText}>{verificationPending ? t('auth.verifyEmail') : t('auth.registerAccount')}</Text>
               )}
             </Pressable>
           </View>
@@ -335,6 +340,9 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   textRTL: { textAlign: 'right' },
+  otpInput: { width: '100%', textAlign: 'center', fontSize: 24, letterSpacing: 8, marginTop: 20, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, padding: 16 },
+  consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 14, paddingVertical: 8 },
+  consentText: { flex: 1, color: Colors.ink, fontSize: 13, lineHeight: 19 },
   scrollContainer: {
     flexGrow: 1,
     padding: 20,

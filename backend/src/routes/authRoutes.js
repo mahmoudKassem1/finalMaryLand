@@ -1,16 +1,21 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const { 
-  registerUser, 
   loginUser, 
   forgetPassword,
-  resetPassword 
+  resetPassword,
+  startRegistration,
+  verifyRegistration,
 } = require('../controllers/authController');
+const registrationStartLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
+const registrationVerifyLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false });
 
 // @route   POST /api/auth/signup
 // @desc    Register a new client (with address)
 // @access  Public
-router.post('/signup', registerUser);
+router.post('/signup', registrationStartLimit, startRegistration);
+router.post('/signup/verify', registrationVerifyLimit, verifyRegistration);
 
 // @route   POST /api/auth/login
 // @desc    Client login & token generation

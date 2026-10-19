@@ -18,6 +18,8 @@ const userSchema = mongoose.Schema(
     
     // ✅ Root Phone: Required for the main profile info
     phone: { type: String, required: false, default: '' },
+    emailVerified: { type: Boolean, default: false },
+    phoneConfirmed: { type: Boolean, default: false },
     
     role: { type: String, default: 'client' },
     

@@ -9,10 +9,13 @@ import { useApp } from '../../context/AppContext';
 
 const Signup = () => {
   const { lang, setLang } = useApp();
-  const { register } = useAuth(); // We use the register function from context
+  const { register, verifyRegistration } = useAuth();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false); // Local loading state
+  const [verificationPending, setVerificationPending] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [phoneConfirmed, setPhoneConfirmed] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', gender: 'Male', password: '',
@@ -21,6 +24,15 @@ const Signup = () => {
 
   const handleSubmit = async (e) => { // <--- 2. Make Async
     e.preventDefault();
+    if (verificationPending) {
+      setLoading(true);
+      const result = await verifyRegistration(formData.email, otp);
+      if (result.success) { toast.success(lang === 'en' ? 'Email verified. Account created.' : 'تم تأكيد البريد وإنشاء الحساب.'); navigate('/'); }
+      else toast.error(result.error);
+      setLoading(false);
+      return;
+    }
+    if (!phoneConfirmed) { toast.error(lang === 'en' ? 'Please confirm this is your real phone number.' : 'يرجى تأكيد أن رقم الهاتف حقيقي ويمكن الوصول إليك من خلاله.'); return; }
     setLoading(true);
 
     // 3. Map Frontend Fields to Backend Schema
@@ -32,16 +44,16 @@ const Signup = () => {
       password: formData.password,
       gender: formData.gender.toLowerCase(), // Ensure lowercase for enum
       street: formData.address, // Map address -> street
-      aptNumber: formData.building // Map building -> aptNumber
+      aptNumber: formData.building, // Map building -> aptNumber
+      phoneConfirmed: true,
     };
 
     // 4. Call Register Function
     const result = await register(payload);
 
     if (result.success) {
-      // ✅ Success Toast
-      toast.success(lang === 'en' ? 'Account created! Please login.' : 'تم إنشاء الحساب! الرجاء تسجيل الدخول.');
-      navigate('/');
+      setVerificationPending(true);
+      toast.success(lang === 'en' ? 'We emailed you a 6-digit verification code.' : 'أرسلنا رمز تحقق من ٦ أرقام إلى بريدك الإلكتروني.');
     } else {
       // ❌ Error Toast
       toast.error(result.error || (lang === 'en' ? 'Registration Failed' : 'فشل إنشاء الحساب'));
@@ -97,6 +109,7 @@ const Signup = () => {
         </div>
         
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {verificationPending ? <div className="md:col-span-2 space-y-4 text-center"><p className="text-slate-600">{lang === 'en' ? `Enter the code sent to ${formData.email}. It expires in 10 minutes.` : `أدخل الرمز المرسل إلى ${formData.email}. تنتهي صلاحيته خلال ١٠ دقائق.`}</p><label className="block text-sm font-bold">{lang === 'en' ? 'Email verification code' : 'رمز تأكيد البريد الإلكتروني'}</label><input autoComplete="one-time-code" inputMode="numeric" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} className="w-full p-4 text-center text-2xl tracking-[0.5em] rounded-xl bg-slate-50 focus:ring-2 focus:ring-[#DC2626]" required /></div> : <>
           
           <div className="md:col-span-2">
             <label className="block text-xs sm:text-sm font-bold mb-1.5 sm:mb-2 text-slate-700">{lang === 'en' ? 'Full Name' : 'الاسم بالكامل'}</label>
@@ -119,6 +132,8 @@ const Signup = () => {
               required 
             />
           </div>
+
+          <label className="md:col-span-2 flex items-start gap-3 text-sm text-slate-700"><input type="checkbox" checked={phoneConfirmed} onChange={e => setPhoneConfirmed(e.target.checked)} className="mt-1 accent-[#DC2626]" required /><span>{lang === 'en' ? 'I confirm this is my real phone number and that I can be reached on it for delivery and order updates.' : 'أؤكد أن هذا رقم هاتفي الحقيقي ويمكن التواصل معي من خلاله بخصوص التوصيل وتحديثات الطلب.'}</span></label>
 
           <div className="md:col-span-1">
             <label className="block text-xs sm:text-sm font-bold mb-1.5 sm:mb-2 text-slate-700">{lang === 'en' ? 'Phone' : 'رقم الهاتف'}</label>
@@ -192,6 +207,7 @@ const Signup = () => {
             />
           </div>
 
+          </>}
           <div className="md:col-span-2 mt-4">
             <SquircleButton 
                 variant="primary" 
@@ -202,7 +218,7 @@ const Signup = () => {
             >
               {loading 
                 ? (lang === 'en' ? 'Creating Account...' : 'جاري الإنشاء...')
-                : (lang === 'en' ? 'Register' : 'تسجيل الحساب')
+                : verificationPending ? (lang === 'en' ? 'Verify email' : 'تأكيد البريد') : (lang === 'en' ? 'Send verification code' : 'إرسال رمز التحقق')
               }
             </SquircleButton>
           </div>

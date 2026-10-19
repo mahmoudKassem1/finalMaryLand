@@ -1,15 +1,21 @@
 {
   "expo": {
-    "name": "application",
-    "slug": "application",
+    "name": "Maryland Pharmacy",
+    "slug": "maryland-pharmacy",
     "scheme": "marylandpharmacy",
     "version": "1.0.0",
     "updates": {
+      "enabled": false,
       "checkAutomatically": "NEVER"
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -21,7 +27,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.application"
+      "package": "com.maryland.pharmacy",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,7 +37,14 @@
       "expo-router",
       "expo-secure-store",
       "expo-status-bar",
-      "expo-image"
-    ]
+      "expo-image",
+      "expo-splash-screen"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "476dde2c-6dcd-4821-ac1c-eea9ba19353e"
+      }
+    }
   }
 }
