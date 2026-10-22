@@ -140,6 +140,9 @@ const Footer = () => {
         
         {/* BOTTOM COPYRIGHT */}
         <div className="border-t border-white/5 pt-8 flex flex-col items-center gap-3 text-center">
+          <Link to="/privacy" className="text-slate-400 hover:text-white text-sm font-semibold transition-colors">
+            {lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy policy'}
+          </Link>
           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
             © {currentYear} MARYLAND PHARMACY.
           </p>

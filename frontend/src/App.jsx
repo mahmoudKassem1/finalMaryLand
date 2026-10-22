@@ -23,6 +23,7 @@ import ProductDetails from './pages/client/ProductDetails';
 import Cart from './pages/client/Cart';
 import Checkout from './pages/client/Checkout';
 import ContactUs from './pages/client/ContactUs';
+import Privacy from './pages/client/Privacy';
 import SearchPage from './pages/client/SearchPage';
 import MyOrders from './pages/client/MyOrders'; 
 import CategoryPage from './pages/client/CategoryPage';
@@ -116,6 +117,7 @@ const App = () => {
           <Route path="/forget-password" element={<ForgetPassword />} />
           <Route path="/reset-password/:resettoken" element={<ResetPassword />} />
           <Route path="/contact" element={<ContactUs />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/shop" element={<Shop />} />
           
           {/* Category Page (Dynamic Slug) */}
